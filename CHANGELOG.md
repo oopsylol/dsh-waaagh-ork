@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4 (2026-08-29)
+
+- Tool / context / compaction process rows now show a green Ork head instead of the default leading icon.
+- Tool errors keep a red ring so a failed call stays readable.
+
 ## 0.1.1 (2026-08-29)
 
 - Ork sprite now sits flush against the composer's left edge.
