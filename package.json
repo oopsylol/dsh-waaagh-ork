@@ -4,6 +4,9 @@
   "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web: masks the model's thinking + output as green \"Waaaaaaagh!!!\" (click to reveal the original), a random-length input mask, and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator.",
   "license": "MIT",
   "type": "module",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "main": "lib/index.js",
   "exports": {
     ".": {
