@@ -14,13 +14,19 @@ WAAAGH! —— 给 DSH Web 加一个绿色像素绿皮兽人，把 AI 写代码�
 ## 安装
 
 ```sh
-dsh plugin --profile web add link:D:/MacShare/waaagh
+dsh plugin --profile web add dsh-waaagh-ork
 ```
 
 然后重启 `dsh web`，刷新页面即可。
+
+> 本地开发安装：`dsh plugin --profile web add link:/path/to/dsh-waaagh-ork`
 
 ## 结构
 
 - `cordis.patch.yml` — 插入 `{ id: waaagh-ork, name: 'dsh-waaagh-ork' }` loader 条目。
 - `lib/index.js` — 宿主半体（no-op）。
 - `lib/client.js` — 浏览器半体（全部 UI 逻辑，手写 JS，无需构建）。
+
+## License
+
+[MIT](LICENSE)

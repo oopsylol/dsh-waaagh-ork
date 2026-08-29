@@ -1,7 +1,7 @@
 {
   "name": "dsh-waaagh-ork",
   "version": "0.1.0",
-  "description": "WAAAGH! — a green pixel-Ork skin for DSH Web: masks the model's thinking + output as 'waaagh' (green), a random-length input mask, and a 'Deep diving' → 'waaagh' running indicator. Click the Ork to reveal.",
+  "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web: masks the model's thinking + output as green \"Waaaaaaagh!!!\" (click to reveal the original), a random-length input mask, and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator.",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -18,7 +18,26 @@
     "lib/index.js",
     "lib/client.js",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oopsylol/dsh-waaagh-ork.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oopsylol/dsh-waaagh-ork/issues"
+  },
+  "homepage": "https://github.com/oopsylol/dsh-waaagh-ork#readme",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "waaagh",
+    "ork",
+    "warhammer",
+    "mascot",
+    "pixel-art"
   ],
   "dsh": {
     "bundle": {
