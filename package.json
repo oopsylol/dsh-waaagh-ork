@@ -1,7 +1,7 @@
 {
   "name": "dsh-waaagh-ork",
-  "version": "0.1.4",
-  "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web: masks the model's thinking + output as green \"Waaaaaaagh!!!\" (click to reveal the original), a random-length input mask, and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator.",
+  "version": "0.2.0",
+  "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web and DSH Desktop: masks the model's thinking + output as green \"Waaaaaaagh!!!\" (click to reveal the original), a random-length input mask, and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator.",
   "license": "MIT",
   "type": "module",
   "publishConfig": {
@@ -36,6 +36,7 @@
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
+    "dsh-desktop",
     "waaagh",
     "ork",
     "warhammer",
@@ -47,19 +48,20 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
+      "platform": "web",
+      "immediately": true,
       "inject": [
-        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-slots",
         "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-settings-general"
-      ],
-      "platform": "web"
+      ]
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-client-ui-conversation": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-client-ui-settings-general": "^0.1.0-rc.6",
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-client-ui-conversation": ">=0.1.6-alpha.2 <0.2.0",
+    "@deepseek-ai/dsh-client-ui-settings-general": ">=0.1.6-alpha.2 <0.2.0",
+    "@deepseek-ai/dsh-client-ui-slots": ">=0.1.0-rc.5 <0.2.0",
     "react": "^18.2.0"
   }
 }
