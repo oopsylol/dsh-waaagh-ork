@@ -1,0 +1,8 @@
+# pnpm settings for this plugin's own development install (the package itself is
+# not a workspace member of anything).
+#
+# esbuild ships its platform binary as an optional dependency and its install
+# script only validates/links it; allowing the script keeps both the local build
+# and CI on the well-trodden path.
+allowBuilds:
+  esbuild: true

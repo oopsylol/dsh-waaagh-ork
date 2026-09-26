@@ -1,5 +1,7 @@
 node_modules/
 *.log
+*.tsbuildinfo
 .DS_Store
 .env
 .npmrc
+_verify_*.png

@@ -23,6 +23,18 @@ Adapted to DSH 0.1.6-alpha.2 (web) and 0.1.7-rc.2 (desktop):
   stage-one prefetch; peer ranges now name 0.1.6-alpha.2+.
 - Slash-command drafts (`/…`) are never masked.
 
+Engineering (no behaviour change):
+
+- The browser half is TypeScript under `src/client/`; `lib/client.js` and
+  `lib/index.js` are esbuild build products (`pnpm run build`) instead of
+  hand-edited bundles. Sprites live in `src/assets/` and are inlined at build.
+- `pnpm run typecheck` checks slot names and props against the published
+  `@deepseek-ai/dsh-client-*` declarations (devDependencies pinned to
+  0.1.7-rc.2), so a wrong slot key or state field fails the compiler instead of
+  the page.
+- CI installs, typechecks, rebuilds and then asserts `lib/` has no drift from
+  `src/`; `prepublishOnly` rebuilds before every publish.
+
 ## 0.1.4 (2026-08-29)
 
 - Tool / context / compaction process rows now show a green Ork head instead of the default leading icon.

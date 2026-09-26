@@ -7,9 +7,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm run build
+      # lib/ is committed because the runtime never builds a plugin: a bundle
+      # that drifted from src/ must fail here.
+      - run: git diff --exit-code -- lib
       - run: node --check lib/client.js
       - run: node --check lib/index.js
       - run: node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
