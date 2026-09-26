@@ -1,0 +1,6 @@
+# lib/ is a committed build product: the runtime never builds a plugin, and CI
+# asserts the committed bundle rebuilds byte-identically from src/. Pin the
+# worktree to LF so a checkout on any platform compares equal to the build.
+lib/*.js text eol=lf
+
+*.png binary
