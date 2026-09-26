@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.1 (2026-09-26)
+
+**Removed the input mask.** It masked the requirement *inside the composer draft*
+(a random-length "waaaaaaaagh", revealed by a second Enter), so the text the model
+received depended on the ordering between the plugin restoring the draft and the
+composer bar reading it for its own submit — a race that could send the mask
+instead of the requirement. The plugin never writes to the draft now:
+
+- Typing, the input box and the submitted payload are untouched: what you type is
+  what gets sent, always.
+- The Ork head is decorative again — no click-to-reveal, no second Enter, and it
+  no longer swallows composer pointer events.
+- The output mask, running indicator, green skin, process-row icons, placeholder
+  cycling and the custom-avatar setting are unchanged.
+
+(0.2.0 was never published to npm.)
+
 ## 0.2.0 (2026-09-21)
 
 Adapted to DSH 0.1.6-alpha.2 (web) and 0.1.7-rc.2 (desktop):

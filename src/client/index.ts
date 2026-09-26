@@ -14,24 +14,23 @@
  *   2. A big derpy pixel-Ork HEAD (sprite, background-image) stands on the left
  *      of the composer and blinks; while a turn runs it writes cycling Ork
  *      gibberish into the composer placeholder.
- *   3. Input mask: pressing Enter (or the send button) masks the requirement as
- *      a random-length "waaaaaaaagh" (held, not sent); clicking the Ork reveals
- *      it; a second Enter sends it (the model never receives "waaaaagh").
- *   4. Output mask: assistant thinking + prose are hidden and replaced by a
+ *   3. Output mask: assistant thinking + prose are hidden and replaced by a
  *      green "Waaaaaaagh!!!". It is STATIC for finished turns and only animates
  *      (growing a's, GPU clip-path) while the turn is streaming.
- *   5. Running indicator: the localized "Deep diving..." / "深度求索中" running
+ *   4. Running indicator: the localized "Deep diving..." / "深度求索中" running
  *      label becomes green "Waaaaaaagh!!!".
+ *
+ * What it deliberately does NOT do: touch the composer draft. The plugin used to
+ * mask the requirement in the input box ("waaaaaaaagh", reveal with a second
+ * Enter), which meant the message the model received depended on the ordering
+ * between our draft restore and the bar's own submit — a race that could send
+ * the mask itself. Nothing here writes to the draft, so what you type is what
+ * gets sent.
  *
  * Compatibility notes (DSH 0.1.6-alpha.2 web + 0.1.7-rc.2 desktop):
  *   - The composer is a Lexical contenteditable with a dedicated
  *     `[data-composer-placeholder]` node, so the placeholder is styled through
  *     that node instead of `textarea::placeholder`.
- *   - The composer submit no longer travels through the slot's
- *     `inputActions.submit` face (the bar calls its own injected `keyboard`
- *     face, which is package-internal by design), so the input mask intercepts
- *     Enter/primary-click in the capture phase on the document instead of
- *     wrapping an action.
  *   - 0.1.7 moved the visible running label out of the polite live region (which
  *     became screen-reader-only) into the current turn-process row; the running
  *     label is therefore located at runtime and tagged with
@@ -56,10 +55,7 @@ import orkOpen from '../assets/ork-open.png'
 declare const require: (specifier: string) => unknown
 const React = require('react') as typeof import('react')
 
-/** Input-mask state machine: idle → masked → revealed. */
-type Phase = 'idle' | 'masked' | 'revealed'
-
-/** The three standard seats the composer Ork consumes (session-scope list slot). */
+/** The standard seat the composer Ork consumes (session-scope list slot). */
 type OrkProps = Partial<PropsRuntime<'conversation.input.left'>>
 
 // ── styles ────────────────────────────────────────────────────────────────────
@@ -107,10 +103,12 @@ function subscribeCustom(listener: (value: string | null) => void): () => void {
 const CSS = [
   /* Big derpy Ork head on the left edge of the composer card */
   'html[data-waaagh-orc] [data-composer-card]{padding-left:100px!important}',
-  `.waaagh-orc{position:absolute;left:0;top:50%;transform:translateY(-50%);width:96px;height:96px;background-image:url("${orkOpen}");background-size:contain;background-position:center;background-repeat:no-repeat;background-color:transparent;border:none;cursor:pointer;padding:0}`,
+  `.waaagh-orc{position:absolute;left:0;top:50%;transform:translateY(-50%);width:96px;height:96px;background-image:url("${orkOpen}");background-size:contain;background-position:center;background-repeat:no-repeat;background-color:transparent;border:none;cursor:default;padding:0}`,
   `.waaagh-orc::after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:url("${orkClosed}");background-size:contain;background-position:center;background-repeat:no-repeat;animation:waaagh-blink 3.6s infinite}`,
   '@keyframes waaagh-blink{0%,92%,100%{opacity:0}95%,97%{opacity:1}}',
   '@media (prefers-reduced-motion:reduce){.waaagh-orc::after{animation:none;opacity:0}}',
+  /* The decorative Ork must never swallow composer clicks. */
+  '.waaagh-orc{pointer-events:none}',
   `.waaagh-toggle{flex:none;height:28px;color:${GREEN};cursor:pointer;background:0 0;border:1px solid ${GREEN};border-radius:999px;padding:0 12px;font-size:13px;font-weight:600}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}`,
   '.waaagh-custom::after{display:none}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
@@ -174,12 +172,6 @@ if (typeof document !== 'undefined' && document.querySelector(`style[data-plugin
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-/** Random-length Ork bellow: "w" + 2..31 "a" + "gh" + 0..2 "!". */
-function randomWaaagh(): string {
-  const a = 2 + Math.floor(Math.random() * 30)
-  const bangs = '!'.repeat(Math.floor(Math.random() * 3))
-  return 'w' + 'a'.repeat(a) + 'gh' + bangs
-}
 
 // ── global output-mask state (one toggle across sessions) ─────────────────────
 let outputRevealed = false
@@ -245,7 +237,7 @@ function scheduleMarkRunningLabel(): void {
   }, 60)
 }
 
-// ── WaaaghOrc (conversation.input.left): Ork head + input mask ───────────────
+// ── WaaaghOrc (conversation.input.left): the decorative Ork head ─────────────
 const ORK_WORDS = ['Waaagh!', '俺寻思这能成……', 'More dakka!', "Gork n' Mork!", '俺寻思……', 'Waaaaaaagh!!!']
 const ORK_MASKS = [
   'Waaaaaaagh!!!',
@@ -268,31 +260,15 @@ function randomMaskWord(): string {
 }
 
 function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
-  const { useInput, inputActions, useSession } = rawProps
-  // Defensive: a shell without the session input face would otherwise crash.
-  if (useInput === undefined || inputActions === undefined || useSession === undefined) return null
+  const { useSession } = rawProps
+  // Defensive: a shell without the session seat would otherwise crash.
+  if (useSession === undefined) return null
 
-  const draft = useInput((state) => state.draft)
-  const draftRef = React.useRef('')
-  draftRef.current = draft
   const running = useSession((state) => state.running) ?? false
 
   // Custom image (dynamic sprite).
   const [sprite, setSprite] = React.useState<string | null>(customImage)
   React.useEffect(() => subscribeCustom(setSprite), [])
-
-  // Input-mask state machine: idle → masked → revealed.
-  const [phase, setPhase] = React.useState<Phase>('idle')
-  const phaseRef = React.useRef<Phase>('idle')
-  const realRef = React.useRef('')
-  /** The masked word currently standing in for the requirement. */
-  const lastMaskRef = React.useRef('')
-  const orcRef = React.useRef<HTMLButtonElement | null>(null)
-
-  const setPhaseBoth = (next: Phase): void => {
-    phaseRef.current = next
-    setPhase(next)
-  }
 
   // Reserve the card's left gutter only while the Ork is mounted.
   React.useEffect(() => {
@@ -302,97 +278,6 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
       delete document.documentElement.dataset.waaaghOrc
     }
   }, [])
-
-  // Wrap the composer's submit path so Enter (and the primary send button)
-  // masks — instead of sending — the first time, and always restores the real
-  // text before a real send. The bar submits through its own injected keyboard
-  // face, which no slot prop exposes, so the interception happens one layer
-  // lower: capture-phase listeners that run before React's root listener sees
-  // the event.
-  React.useEffect(() => {
-    if (typeof document === 'undefined') return
-    // Several composers can coexist (hero, session, sidebar subagent); each Ork
-    // only ever drives the card it lives in.
-    const inOwnComposer = (target: EventTarget | null): boolean => {
-      if (!(target instanceof Element)) return false
-      const card = orcRef.current?.closest('[data-composer-card]')
-      return card !== undefined && card !== null && card.contains(target)
-    }
-    const isStopButton = (el: Element): boolean => STOP_LABELS.includes(el.getAttribute('aria-label') ?? '')
-    const isSendButton = (el: Element): boolean =>
-      SEND_LABELS.includes(el.getAttribute('aria-label') ?? '') ||
-      ((el.getAttribute('class') ?? '').includes('primary') && !isStopButton(el))
-    /**
-     * Apply the phase machine to one submit gesture.
-     * @returns whether the gesture was swallowed (masked) or should continue.
-     */
-    const intercept = (): boolean => {
-      const text = (draftRef.current ?? '').trim()
-      // Untouched mask + Enter = "now send the real requirement".
-      if (phaseRef.current === 'masked' && text === lastMaskRef.current) {
-        const real = realRef.current
-        realRef.current = ''
-        setPhaseBoth('idle')
-        if (real === '') return false
-        inputActions.setDraft(real)
-        // Let the editor's store update settle, then send on the next task so the
-        // model can never receive the masked gibberish.
-        setTimeout(() => inputActions.submit(), 0)
-        return true
-      }
-      // Revealed requirement + Enter = ordinary send.
-      if (phaseRef.current === 'revealed' && text === realRef.current) {
-        realRef.current = ''
-        setPhaseBoth('idle')
-        return false
-      }
-      // Anything else with content becomes the next masked requirement (an edit
-      // of the mask is hidden again rather than discarded).
-      if (text !== '' && !text.startsWith('/')) {
-        const word = randomWaaagh()
-        realRef.current = text
-        lastMaskRef.current = word
-        setPhaseBoth('masked')
-        inputActions.setDraft(word)
-        return true
-      }
-      return false
-    }
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return
-      if (event.isComposing || event.keyCode === 229) return
-      if (!inOwnComposer(event.target)) return
-      if (intercept()) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-    }
-    const onClick = (event: MouseEvent): void => {
-      if (event.button !== 0) return
-      if (!inOwnComposer(event.target)) return
-      const target = event.target instanceof Element ? event.target.closest('[data-composer-card] button') : null
-      if (target === null || !isSendButton(target)) return
-      if (intercept()) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown, true)
-    document.addEventListener('click', onClick, true)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown, true)
-      document.removeEventListener('click', onClick, true)
-    }
-  }, [inputActions])
-
-  const onOrcClick = (): void => {
-    if (phaseRef.current === 'masked' && realRef.current) {
-      inputActions.setDraft(realRef.current)
-      setPhaseBoth('revealed')
-    }
-  }
-
-  const hint = phase === 'masked' ? '点击绿皮看俺的需求' : phase === 'revealed' ? '已揭示 · 再回车发送' : 'WAAAGH'
 
   // Cycling Ork word while the turn runs.
   const [wordIndex, setWordIndex] = React.useState(0)
@@ -427,14 +312,11 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   }, [running, wordIndex])
 
   const isCustom = sprite !== null
-  return React.createElement('button', {
-    ref: orcRef,
-    type: 'button',
+  return React.createElement('div', {
     className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
     style: isCustom ? { backgroundImage: `url("${sprite}")` } : undefined,
-    onClick: onOrcClick,
-    title: hint,
-    'aria-label': hint
+    title: 'WAAAGH',
+    'aria-hidden': true
   })
 }
 
