@@ -51,6 +51,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings-general/client'
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import orkClosed from '../assets/ork-closed.png'
 import orkOpen from '../assets/ork-open.png'
+import orkShout from '../assets/ork-shout.png'
 
 /** The module-table `require` the bundle factory receives from the Loader. */
 declare const require: (specifier: string) => unknown
@@ -101,108 +102,24 @@ function subscribeCustom(listener: (value: string | null) => void): () => void {
   }
 }
 
-// ── the Ork's armour plate ────────────────────────────────────────────────────
-/** One background layer of the plate: the image plus its own geometry. */
-interface PlateLayer {
-  image: string
-  size: string
-  position: string
-  repeat?: string
-}
-
-/** Plate edge length in pixels; the composer gutter below is derived from it. */
-const PLATE = 118
-/**
- * Box the face occupies inside the plate (`top right bottom left`). The sprite
- * is opaque on its left/top and transparent on its right, so the face is pulled
- * left and up: that leaves the hazard stripe, the right-hand rivet column and
- * the teef row on visible armour.
- */
-const FACE_INSET = '12% 12% 14% 8%'
-/** A single steel rivet, drawn as concentric rings. */
-const RIVET =
-  'radial-gradient(circle at 50% 50%,#cdd8bd 0 1.4px,#6d7a5e 1.4px 2.6px,rgba(0,0,0,.65) 2.6px 3.6px,transparent 3.7px)'
-/**
- * Armour layers, topmost first: a hazard stripe across the top, a row of ivory
- * teef along the bottom, a green under-glow, a rivet column down the right edge,
- * brushed scratches, a top bevel and the gunmetal base.
- */
-const PLATE_LAYERS: PlateLayer[] = [
-  { image: 'repeating-linear-gradient(45deg,#c9a227 0 4px,#171204 4px 8px)', size: '100% 8px', position: '0 2px' },
-  /* Bone teef: the classic two-layer 45°/−45° zigzag, tiled along the bottom so
-     the saw-tooth silhouette's lower edge comes out ivory instead of gunmetal. */
-  {
-    image: 'linear-gradient(45deg,#e8dfbe 25%,transparent 25% 75%,#e8dfbe 75%)',
-    size: '12px 12px',
-    position: '0 calc(100% - 11px)',
-    repeat: 'repeat-x'
-  },
-  {
-    image: 'linear-gradient(-45deg,#e8dfbe 25%,transparent 25% 75%,#e8dfbe 75%)',
-    size: '12px 12px',
-    position: '6px calc(100% - 11px)',
-    repeat: 'repeat-x'
-  },
-  { image: 'radial-gradient(70% 60% at 50% 102%,rgba(75,191,42,.3),transparent 70%)', size: '100% 100%', position: '0 0' },
-  /* A riveted seam down the visible right-hand armour: four bolts, evenly set. */
-  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 14px' },
-  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 42px' },
-  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 70px' },
-  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 98px' },
-  {
-    image: 'repeating-linear-gradient(115deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px)',
-    size: 'auto',
-    position: '0 0',
-    repeat: 'repeat'
-  },
-  { image: 'linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 44%)', size: '100% 100%', position: '0 0' },
-  /* Inner shadow: makes the plate read as a thick cast slab, not a flat patch. */
-  { image: 'radial-gradient(120% 120% at 50% 50%,transparent 52%,rgba(0,0,0,.5))', size: '100% 100%', position: '0 0' },
-  { image: 'linear-gradient(160deg,#4a5942,#2a3324 58%,#141a11)', size: '100% 100%', position: '0 0' }
-]
-const plateProperty = (pick: (layer: PlateLayer) => string): string => PLATE_LAYERS.map(pick).join(',')
-/**
- * Saw-tooth outline: a rectangle whose four edges are cut into triangular teef
- * pointing outwards. Percent based, so it scales with the box.
- * @param teeth - teeth per edge.
- * @param depth - tooth depth as a percentage of the edge.
- */
-function teefOutline(teeth = 5, depth = 7): string {
-  const step = 100 / teeth
-  const points: string[] = []
-  const at = (x: number, y: number): void => {
-    points.push(`${x.toFixed(2)}% ${y.toFixed(2)}%`)
-  }
-  for (let i = 0; i < teeth; i += 1) {
-    at(depth, i * step)
-    at(0, i * step + step / 2)
-  }
-  for (let i = 0; i < teeth; i += 1) {
-    at(i * step, 100 - depth)
-    at(i * step + step / 2, 100)
-  }
-  for (let i = 0; i < teeth; i += 1) {
-    at(100 - depth, 100 - i * step)
-    at(100, 100 - (i * step + step / 2))
-  }
-  for (let i = 0; i < teeth; i += 1) {
-    at(100 - i * step, depth)
-    at(100 - (i * step + step / 2), 0)
-  }
-  return `polygon(${points.join(',')})`
-}
+// ── geometry ──────────────────────────────────────────────────────────────
+/** Idle head box: the mascot floats over the composer card's left edge. */
+const HEAD_SIZE = 122
+/** How far the mascot hangs outside the card, which sets the card's gutter. */
+const FLOAT_OUT = 52
 
 const CSS = [
-  /* The Ork stands on a bolted-on armour plate at the left edge of the composer
-     card: gunmetal base, hazard stripe, four rivets, a row of teef along the
-     bottom, and a saw-tooth silhouette. Centring uses the box offset (not
-     `transform`) so every animation below owns `transform` outright. */
-  `html[data-waaagh-orc] [data-composer-card]{padding-left:${PLATE + 6}px!important}`,
-  `.waaagh-orc{position:absolute;left:0;top:calc(50% - ${PLATE / 2}px);width:${PLATE}px;height:${PLATE}px;background-color:transparent;border:none;cursor:default;padding:0;pointer-events:none;background-image:${plateProperty((layer) => layer.image)};background-size:${plateProperty((layer) => layer.size)};background-position:${plateProperty((layer) => layer.position)};background-repeat:${plateProperty((layer) => layer.repeat ?? 'no-repeat')};clip-path:${teefOutline()};animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
-  /* The face rides its own layer so a custom avatar can be swapped in by variable
-     and never has to fight the plate for `background-image` slots. */
-  `.waaagh-orc::before{content:"";position:absolute;inset:${FACE_INSET};background-image:var(--waaagh-face,url("${orkOpen}"));background-size:contain;background-position:left center;background-repeat:no-repeat}`,
-  `.waaagh-orc::after{content:"";position:absolute;inset:${FACE_INSET};background-image:url("${orkClosed}");background-size:contain;background-position:left center;background-repeat:no-repeat;animation:waaagh-blink 3.6s infinite}`,
+  /*
+   * The mascot floats over the left edge of the composer card — nothing is
+   * clipped or boxed in, it simply hangs outside the bubble. The card keeps a
+   * gutter so the draft never runs under the head. Centring uses the box offset
+   * (not `transform`) so every animation below owns `transform` outright.
+   */
+  `html[data-waaagh-orc] [data-composer-card]{padding-left:${HEAD_SIZE - FLOAT_OUT + 10}px!important}`,
+  `.waaagh-orc{position:absolute;left:-${FLOAT_OUT}px;top:calc(50% - ${HEAD_SIZE / 2}px);width:${HEAD_SIZE}px;height:${HEAD_SIZE}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  /* Idle: the head, with the blink overlay riding the same box. */
+  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkOpen}"));background-size:contain;background-position:center;background-repeat:no-repeat}`,
+  `.waaagh-orc::after{content:"";position:absolute;inset:0;background-image:url("${orkClosed}");background-size:contain;background-position:center;background-repeat:no-repeat;animation:waaagh-blink 3.6s infinite}`,
   '@keyframes waaagh-blink{0%,92%,100%{opacity:0}95%,97%{opacity:1}}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
      the owner renders `[data-composer-placeholder]` only while the draft is
@@ -212,6 +129,21 @@ const CSS = [
   'html[data-waaagh-running=on] .waaagh-orc{animation:waaagh-chant .46s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(75,191,42,.55)) saturate(1.25)}',
   /* And it barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
+  /*
+   * Working: the head gives way to the full-body Ork, which keeps shouting. The
+   * three frames ship as one vertical strip and the flip is a three-step
+   * `background-position` walk, so the stylesheet holds a single URL.
+   */
+  `.waaagh-body{position:absolute;left:-6%;top:-4%;right:-6%;bottom:-2%;display:none;background-image:url("${orkShout}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
+  'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip .54s step-end infinite}',
+  'html[data-waaagh-running=on] .waaagh-orc::before,html[data-waaagh-running=on] .waaagh-orc::after{display:none}',
+  '@keyframes waaagh-shout-flip{0%{background-position:0 0}33.33%{background-position:0 50%}66.66%{background-position:0 100%}}',
+  /* …with a comic "WAAAGH!" burst above its head. Kept short (the burst is a
+     label, not a sentence) and clear of the draft's first line. */
+  `.waaagh-burst{position:absolute;left:-16%;top:-34%;display:none;padding:5px 9px;font:800 12px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:#12200a;background:${GREEN};border:2px solid #24380f;border-radius:12px;box-shadow:2px 2px 0 rgba(20,32,10,.35);transform:rotate(-8deg);white-space:nowrap}`,
+  '.waaagh-burst::after{content:"";position:absolute;left:20px;bottom:-9px;border:6px solid transparent;border-top-color:#24380f}',
+  'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop .9s ease-in-out infinite}',
+  '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-8deg) scale(.9)}45%{transform:rotate(-4deg) scale(1.08)}}',
   '.waaagh-toggle{flex:none;height:28px;color:' + GREEN + ';cursor:pointer;background:0 0;border:1px solid ' + GREEN + ';border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;transition:transform .12s ease,background .12s ease}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}.waaagh-toggle:active{transform:scale(.94)}',
   '.waaagh-custom::after{display:none}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
@@ -219,8 +151,13 @@ const CSS = [
   '.waaagh-settings-input{flex:1;min-width:220px;height:30px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:0 8px;font-size:13px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
   '.waaagh-settings-row button{height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}',
   '.waaagh-settings-hint{font-size:12px;color:var(--dsw-alias-label-caption)}',
-  /* Green composer card (input box) */
-  `[data-composer-card]{border-color:${GREEN}!important;box-shadow:0 0 0 1px rgba(75,191,42,.3),0 4px 18px rgba(75,191,42,.18)!important}`,
+  /*
+   * Comic speech bubble: a chunky ink outline with a hard offset shadow, and a
+   * tail on the left edge pointing at the Ork's mouth (kept below centre so the
+   * floating head never covers it). The tail is one extra background layer, so
+   * the card's own themed fill colour survives.
+   */
+  `[data-composer-card]{border:2px solid #2c3a22!important;border-radius:20px!important;box-shadow:4px 4px 0 rgba(28,42,18,.28),0 0 0 1px rgba(75,191,42,.35)!important;background-image:conic-gradient(from 268deg at 100% 50%,#2c3a22 0 26%,transparent 26%)!important;background-repeat:no-repeat!important;background-position:left calc(100% - 30px)!important;background-size:26px 22px!important}`,
   /* Placeholder: `[data-composer-placeholder]` since the Lexical composer (textarea kept for older builds) */
   `[data-composer-card] textarea::placeholder,[data-composer-card] [data-composer-placeholder]{color:${GREEN}!important;opacity:.7}`,
   /* While a turn runs the real placeholder body is swapped for cycling Ork gibberish. */
@@ -279,7 +216,7 @@ const CSS = [
   '@keyframes waaagh-shout{from{transform:translateY(0) rotate(-1.4deg)}to{transform:translateY(-2px) rotate(1.4deg)}}',
   '@keyframes waaagh-dakka{0%{transform:scale(.55) rotate(-16deg);filter:brightness(2.4)}55%{transform:scale(1.2) rotate(9deg)}100%{transform:scale(1) rotate(0);filter:none}}',
   /* one switch turns the whole menagerie off */
-  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::after,html[data-waaagh-running=on] .waaagh-orc,html[data-waaagh-send] .waaagh-orc,[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}.waaagh-orc::after{opacity:0}}'
+  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::after,html[data-waaagh-running=on] .waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-body,html[data-waaagh-running=on] .waaagh-burst,[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}.waaagh-orc::after{opacity:0}}'
 ].join('\n')
 
 const TAG_ID = 'dsh-waaagh-ork/styles'
@@ -425,6 +362,8 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   // Custom image (dynamic sprite).
   const [sprite, setSprite] = React.useState<string | null>(customImage)
   React.useEffect(() => subscribeCustom(setSprite), [])
+  /** The comic burst that shows this run's bellow while the Ork shouts. */
+  const burstRef = React.useRef<HTMLSpanElement | null>(null)
 
   // Reserve the card's left gutter only while the Ork is mounted.
   React.useEffect(() => {
@@ -454,7 +393,8 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
 
   // While running: flag the document, swap the composer placeholder for a
   // cycling Ork word (through a CSS variable, so React's own placeholder render
-  // is never fought), and turn the running label into "Waaaaaaagh!!!".
+  // is never fought), turn the running label into "Waaaaaaagh!!!", and put this
+  // run's bellow in the shouting Ork's burst.
   React.useEffect(() => {
     if (typeof document === 'undefined') return
     const root = document.documentElement
@@ -462,6 +402,7 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     if (running) {
       root.setAttribute('data-waaagh-running', 'on')
       root.style.setProperty('--waaagh-placeholder', JSON.stringify(ORK_WORDS[wordIndex] ?? 'WAAAGH'))
+      if (burstRef.current !== null) burstRef.current.textContent = randomBellow(2, 6)
       markRunningLabel()
     } else {
       root.removeAttribute('data-waaagh-running')
@@ -477,14 +418,20 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   }, [running, wordIndex])
 
   const isCustom = sprite !== null
-  return React.createElement('div', {
-    className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
-    // The custom avatar feeds the face layer's variable; the plate keeps its
-    // own background slots either way.
-    style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
-    title: 'WAAAGH',
-    'aria-hidden': true
-  })
+  return React.createElement(
+    'div',
+    {
+      className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
+      // The custom avatar feeds the idle head layer's variable.
+      style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
+      title: 'WAAAGH',
+      'aria-hidden': true
+    },
+    // Working: the full-body shouting Ork and its comic burst (both hidden while
+    // waiting, where the head above carries the mascot).
+    React.createElement('span', { className: 'waaagh-body' }),
+    React.createElement('span', { ref: burstRef, className: 'waaagh-burst' })
+  )
 }
 
 // ── WaaaghToggle (conversation.input.right): output-mask reveal ──────────────

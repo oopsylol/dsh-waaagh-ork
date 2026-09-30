@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 (2026-09-30)
+
+Composer as a comic strip, with two mascot states:
+
+- **Waiting:** the armour plate is gone; the plain head floats *outside* the
+  composer card's left edge (52px outside, 124px card gutter) instead of sitting
+  inside a padded gutter, and breathes/blinks as before.
+- **Composer = speech bubble:** chunky ink outline, 20px radius, hard offset
+  shadow, and a tail on the left edge below the Ork's chin pointing back at him
+  (`conic-gradient` background layer, so the themed fill colour survives).
+- **Working:** the head is replaced by a full-body Ork that keeps shouting —
+  three frames (arms out / arms up / choppa overhead) shipped as one vertical
+  strip and flipped with a three-step `background-position` walk — plus a green
+  comic burst carrying a short random bellow drawn fresh per run.
+- Sprites: `ork-shout.png` (88x360 strip) added; `scripts/sprite.mjs` now draws
+  the body too (pauldron, chest strap, belt, boots, choppa) and emits the strip.
+- `prefers-reduced-motion` still switches the whole menagerie off, including the
+  flipbook and the burst.
+
 ## 0.2.5 (2026-09-30)
 
 New mascot art. The old sprite was a photo-real-ish AI head; the ask was "cuter
