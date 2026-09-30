@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.2 (2026-09-30)
+
+The working-state Ork was a green blob with a tiny head — not recognisably an
+Ork, so it is redrawn from scratch on a 64x80 grid (was 44x60, 128x480 strip
+after 2x upscale) as an Ork boy rather than a generic mascot:
+
+- **The jaw is wider than the skull**, which is what makes a greenskin head read
+  as a greenskin, plus short 2px tusks at the mouth corners, a row of upper teef,
+  a dark roaring maw with a tongue, red eyes under angled brows, pointed ears and
+  a bristle tuft.
+- **Furious:** red eyes, a low heavy brow, spikes on a steel pauldron, a raised
+  choppa. **Silly:** chibi proportions — the head is nearly half the sprite.
+- Hunched shoulders over a barrel gut, oversized fists, big boots, belt and
+  buckle; three poses (fists out / fists overhead / choppa up).
+- `scripts/sprite.mjs` gained `--dump body 1`, an ASCII map of any frame. Comparing
+  it against the render is how the last two bugs were found: the scanline polygon
+  fill grows shapes a pixel per side, so the tusks fused with the teef into one
+  wide pale slab across the muzzle, and the pauldron had grown across the chest.
+- Bone pauldron spikes were swapped for steel ones (they read as a second pair of
+  horns next to the head).
+
 ## 0.3.1 (2026-09-30)
 
 Support for the desktop's client build, which is **0.2.0-rc.2** — newer than the

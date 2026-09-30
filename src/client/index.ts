@@ -107,6 +107,12 @@ function subscribeCustom(listener: (value: string | null) => void): () => void {
 const HEAD_SIZE = 122
 /** How far the mascot hangs outside the card, which sets the card's gutter. */
 const FLOAT_OUT = 52
+/**
+ * Full-body box. The shout strip is three 128x160 frames, so the box has to keep
+ * that 0.8 aspect or `background-size:100% 300%` squashes the Ork.
+ */
+const BODY_W = HEAD_SIZE
+const BODY_H = Math.round((HEAD_SIZE * 160) / 128)
 
 const CSS = [
   /*
@@ -134,13 +140,13 @@ const CSS = [
    * three frames ship as one vertical strip and the flip is a three-step
    * `background-position` walk, so the stylesheet holds a single URL.
    */
-  `.waaagh-body{position:absolute;left:-6%;top:-4%;right:-6%;bottom:-2%;display:none;background-image:url("${orkShout}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
+  `.waaagh-body{position:absolute;left:0;top:${HEAD_SIZE - BODY_H}px;width:${BODY_W}px;height:${BODY_H}px;display:none;background-image:url("${orkShout}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
   'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip .54s step-end infinite}',
   'html[data-waaagh-running=on] .waaagh-orc::before,html[data-waaagh-running=on] .waaagh-orc::after{display:none}',
   '@keyframes waaagh-shout-flip{0%{background-position:0 0}33.33%{background-position:0 50%}66.66%{background-position:0 100%}}',
   /* …with a comic "WAAAGH!" burst above its head. Kept short (the burst is a
      label, not a sentence) and clear of the draft's first line. */
-  `.waaagh-burst{position:absolute;left:-16%;top:-34%;display:none;padding:5px 9px;font:800 12px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:#12200a;background:${GREEN};border:2px solid #24380f;border-radius:12px;box-shadow:2px 2px 0 rgba(20,32,10,.35);transform:rotate(-8deg);white-space:nowrap}`,
+  `.waaagh-burst{position:absolute;left:-22%;top:-56%;display:none;padding:5px 9px;font:800 12px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:#12200a;background:${GREEN};border:2px solid #24380f;border-radius:12px;box-shadow:2px 2px 0 rgba(20,32,10,.35);transform:rotate(-8deg);white-space:nowrap}`,
   '.waaagh-burst::after{content:"";position:absolute;left:20px;bottom:-9px;border:6px solid transparent;border-top-color:#24380f}',
   'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop .9s ease-in-out infinite}',
   '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-8deg) scale(.9)}45%{transform:rotate(-4deg) scale(1.08)}}',
