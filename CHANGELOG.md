@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.11.2 (2026-09-30)
+
+Waiting was still on a schedule: one pose every 28 seconds, round and round. The ask
+was runs of random length instead — 11111111, 2222, 222, 333333, 444.
+
+- **Random dwell**: each waiting pose now holds for a random 22-70s, and the next
+  pick is random too, so the same pose can come back twice in a row with a different
+  length ("2222, 222"). One shared timer drives it, and it stands down while a turn
+  runs, since the work state owns the mood then.
+- **Slower strips**: a 5-frame waiting strip walks in 3.6s (720ms a frame) instead of
+  2.2s, and the drowning strip in 2.8s. Working keeps its own pace — 0.8s a loop
+  while the reply streams, 1.3s when it goes quiet, because effort should look like
+  effort.
+- The celebration hands the mood straight back to the waiting schedule when it ends,
+  instead of leaving the corner frozen for up to a minute.
+- Verified live over 150s: runs of `drown:61s, choppa:65s, swim:24s` — random picks,
+  random lengths — and every waiting strip walks at 3.6s or slower (idle 5s blink,
+  drown 2.8s).
+
 ## 0.11.1 (2026-09-30)
 
 The waiting corner was fidgeting. Two things made it busy:
