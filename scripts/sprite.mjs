@@ -372,109 +372,106 @@ const BODY_H = 80
 /**
  * Draw one shout frame of the full-body Ork.
  *
- * Read as an Ork boy, not a generic green mascot: the head is a third of the
- * height with a jutting jaw and outward tusks, the brow sits low over small red
- * eyes, the shoulders hunch above the neck under a spiked pauldron, the fists are
- * oversized and the legs are short and thick.
+ * A WAAAGH is a charge and a scream, not a pose: the maw takes up most of the
+ * face, the stance lunges (near boot planted forward, far leg trailing), the arms
+ * are flung wide, and comic shout lines radiate from the jaw. An earlier version
+ * had him standing symmetrically with his mouth nearly shut — technically a
+ * "shouting" sprite, but nothing about it went WAAAGH.
  *
- * @param frame - 0: roaring with fists out, 1: both fists overhead, 2: choppa up.
+ * @param frame - 0: scream, arms back · 1: charge, fist thrown forward · 2: peak, both fists overhead.
  */
 function drawBody (frame) {
   const { canvas, mask } = silhouette(BODY_W, BODY_H, (shapes) => {
-    // Ork silhouette: the jaw is WIDER than the skull, which is what makes the
-    // head read as a greenskin rather than a green ball. Ears stay small and sit
-    // high — drawn wider they read as a hat brim.
-    shapes.ellipse(32, 17, 13, 11, C.skin) // skull
-    shapes.ellipse(32, 30, 15, 7.5, C.skin) // big jutting jaw
-    shapes.polygon([[20, 12], [13, 5], [15, 15], [20, 15]], C.skin) // left ear
-    shapes.polygon([[44, 12], [51, 5], [49, 15], [44, 15]], C.skin) // right ear
-    shapes.polygon([[28, 6], [30, 1], [33, 1], [35, 6]], C.skin) // bristles
-    shapes.polygon([[34, 6], [37, 2], [40, 3], [38, 7]], C.skin)
-    shapes.rect(27, 34, 37, 42, C.skin) // neck
-    // Hunched shoulders over a barrel gut — a flat trapezoid reads as a robot.
-    shapes.ellipse(32, 43, 16, 7, C.skin) // shoulders
+    // Head: big, with a jaw wider than the skull and a huge open maw between them.
+    shapes.ellipse(32, 16, 15, 13, C.skin) // skull
+    shapes.ellipse(32, 28, 16, 8, C.skin) // jutting jaw
+    shapes.polygon([[19, 10], [13, 4], [14, 15], [20, 15]], C.skin) // left ear, small: wider reads as a wing
+    shapes.polygon([[45, 10], [51, 4], [50, 15], [44, 15]], C.skin) // right ear
+    shapes.polygon([[27, 4], [29, -1], [33, -1], [35, 4]], C.skin) // bristles
+    shapes.polygon([[34, 4], [38, -1], [42, 1], [39, 5]], C.skin)
+    shapes.rect(26, 33, 38, 41, C.skin) // neck
+    shapes.ellipse(32, 42, 16, 7, C.skin) // shoulders
     shapes.ellipse(32, 52, 17, 13, C.skin) // gut
-    shapes.rect(22, 60, 31, 72, C.skin) // left leg
-    shapes.rect(33, 60, 42, 72, C.skin) // right leg
-    // Arms hang off the shoulders with an armpit gap; the raised poses keep the
-    // fists clear of the jaw (host them any closer and they fuse with the cheeks).
+    // Lunge: near leg planted forward and low, far leg trailing behind.
+    shapes.rect(31, 60, 42, 75, C.skin)
+    shapes.rect(19, 60, 29, 70, C.skin)
     if (frame === 0) {
-      shapes.polygon([[20, 42], [7, 48], [7, 56], [20, 55]], C.skin)
-      shapes.polygon([[44, 42], [57, 48], [57, 56], [44, 55]], C.skin)
-      shapes.ellipse(6, 52, 5.5, 5.5, C.skin)
-      shapes.ellipse(58, 52, 5.5, 5.5, C.skin)
+      // Scream: both arms flung back and out, chest open.
+      shapes.polygon([[18, 41], [4, 34], [5, 44], [19, 50]], C.skin)
+      shapes.polygon([[46, 41], [60, 34], [59, 44], [45, 50]], C.skin)
+      shapes.ellipse(5, 39, 6, 6, C.skin)
+      shapes.ellipse(59, 39, 6, 6, C.skin)
     } else if (frame === 1) {
-      shapes.polygon([[21, 44], [9, 38], [12, 31], [25, 41]], C.skin)
-      shapes.polygon([[43, 44], [55, 38], [52, 31], [39, 41]], C.skin)
-      shapes.ellipse(11, 31, 5.5, 5.5, C.skin)
-      shapes.ellipse(53, 31, 5.5, 5.5, C.skin)
+      // Charge: near fist thrown forward, far arm dragged behind.
+      shapes.polygon([[18, 41], [5, 30], [11, 24], [21, 37]], C.skin)
+      shapes.polygon([[46, 41], [59, 48], [57, 58], [45, 52]], C.skin)
+      shapes.ellipse(7, 27, 6.5, 6.5, C.skin)
+      shapes.ellipse(59, 53, 6, 6, C.skin)
     } else {
-      shapes.polygon([[43, 44], [57, 34], [53, 27], [39, 40]], C.skin)
-      shapes.ellipse(54, 29, 5.5, 5.5, C.skin)
-      shapes.polygon([[21, 44], [8, 54], [13, 61], [26, 52]], C.skin)
-      shapes.ellipse(9, 58, 5.5, 5.5, C.skin)
+      // Peak: both fists overhead, body arched back.
+      shapes.polygon([[18, 41], [7, 25], [14, 19], [24, 35]], C.skin)
+      shapes.polygon([[46, 41], [57, 25], [50, 19], [40, 35]], C.skin)
+      shapes.ellipse(10, 21, 6.5, 6.5, C.skin)
+      shapes.ellipse(54, 21, 6.5, 6.5, C.skin)
     }
   })
 
   canvas.shadeFrom(mask, { lightBias: 84 })
   canvas.outlineFrom(mask)
+  canvas.rect(26, 35, 38, 39, C.deep) // neck shadow
 
-  // Neck shadow: head and shoulders are one silhouette, so the ink outline cannot
-  // separate them and without this the head melts into the body.
-  canvas.rect(26, 36, 38, 40, C.deep)
-
-  // Gear, kept sparse so the silhouette stays readable at 128px wide.
-  canvas.rect(22, 60, 31, 72, C.leather) // trousers
-  canvas.rect(33, 60, 42, 72, C.leather)
-  canvas.rect(19, 70, 32, 78, C.metalDark) // boots
-  canvas.rect(32, 70, 45, 78, C.metalDark)
-  canvas.rect(19, 77, 32, 79, C.metal) // soles
-  canvas.rect(32, 77, 45, 79, C.metal)
-  canvas.rect(15, 54, 49, 58, C.leatherDark) // belt
-  canvas.rect(29, 55, 35, 58, C.metal) // buckle
-  /* Spiked pauldron on the left shoulder. The spikes are steel, not bone: bone
-     spikes up there read as a second pair of horns. */
-  canvas.polygon([[8, 39], [21, 37], [24, 48], [10, 51]], C.metal)
-  canvas.polygon([[9, 47], [22, 44], [22, 48], [10, 50]], C.metalDark)
+  // Gear.
+  canvas.rect(31, 60, 42, 74, C.leather) // trousers
+  canvas.rect(19, 60, 29, 69, C.leather)
+  canvas.rect(29, 71, 45, 79, C.metalDark) // near boot, planted forward
+  canvas.rect(16, 67, 30, 74, C.metalDark)
+  canvas.rect(29, 78, 45, 80, C.metal)
+  canvas.rect(16, 73, 30, 75, C.metal)
+  canvas.rect(14, 54, 50, 58, C.leatherDark) // belt
+  canvas.rect(29, 55, 35, 58, C.metal)
+  canvas.polygon([[8, 39], [21, 37], [24, 49], [10, 52]], C.metal) // pauldron
+  canvas.polygon([[9, 48], [22, 45], [22, 49], [10, 51]], C.metalDark)
   canvas.polygon([[10, 40], [12, 33], [15, 40]], C.metalDark)
   canvas.polygon([[17, 38], [19, 32], [22, 38]], C.metalDark)
-  canvas.set(12, 41, C.metal)
-  canvas.set(19, 40, C.metal)
 
   if (frame === 2) {
-    // Choppa: a slab of a blade over the raised fist.
-    canvas.polygon([[50, 27], [61, 3], [63, 25]], C.metal)
-    canvas.polygon([[50, 27], [57, 5], [61, 3], [63, 25]], C.metalDark)
-    canvas.rect(52, 25, 55, 33, C.leatherDark) // haft
+    // Choppa swung overhead.
+    canvas.polygon([[50, 20], [62, -2], [63, 20]], C.metal)
+    canvas.polygon([[50, 20], [58, 0], [62, -2], [63, 20]], C.metalDark)
+    canvas.rect(52, 18, 55, 26, C.leatherDark)
   }
 
-  // Face: heavy brow low over small red eyes, flat nose, roaring maw, teef, and
-  // short corner tusks (long ones read as a white muzzle).
-  canvas.rect(21, 12, 43, 14, C.deep) // brow ridge
-  canvas.polygon([[21, 13], [27, 17], [21, 18]], C.deep) // angled brows = fierce
-  canvas.polygon([[43, 13], [37, 17], [43, 18]], C.deep)
-  canvas.ellipse(26, 19, 3.5, 2.5, C.eyeRed)
-  canvas.ellipse(38, 19, 3.5, 2.5, C.eyeRed)
-  canvas.ellipse(26, 19, 1.6, 1.6, C.eyeDark)
-  canvas.ellipse(38, 19, 1.6, 1.6, C.eyeDark)
-  canvas.set(25, 18, C.glint)
-  canvas.set(37, 18, C.glint)
-  canvas.ellipse(32, 25, 5, 2, C.mid) // flat nose
-  canvas.set(30, 25, C.deep)
-  canvas.set(34, 25, C.deep)
-  const maw = frame === 0 ? [32, 31, 7, 3.5] : frame === 1 ? [32, 31, 8, 4] : [32, 31, 7.5, 3.5]
-  canvas.ellipse(maw[0], maw[1], maw[2], maw[3], C.deep)
-  canvas.ellipse(32, maw[1] + 1.5, maw[2] - 2.5, maw[3] - 2, C.tongue)
-  for (const x of [29, 32, 35]) canvas.rect(x, 28, x + 1, 30, C.tusk) // upper teef
-  /* Tusks: two pixels wide, rising from the mouth's corners past the upper lip.
-     Wider or taller than this and they stop reading as tusks and start reading as
-     a white muzzle. */
-  canvas.rect(25, 24, 26, 31, C.tusk)
-  canvas.rect(38, 24, 39, 31, C.tusk)
-  canvas.rect(25, 28, 26, 31, C.tuskShade)
-  canvas.rect(38, 28, 39, 31, C.tuskShade)
+  /* The maw is the point: a big dark hole across most of the jaw, four teef
+     hanging from the top, tusks at both corners, tongue at the bottom. */
+  canvas.ellipse(32, 27, 11, 7.5, C.deep)
+  canvas.ellipse(32, 31, 8, 3.5, C.tongue)
+  canvas.ellipse(32, 32.5, 6, 2, C.tongueShade)
+  for (const x of [24, 28, 32, 36]) canvas.rect(x, 21, x + 1, 24, C.tusk)
+  canvas.rect(21, 20, 23, 32, C.tusk) // left tusk
+  canvas.rect(41, 20, 43, 32, C.tusk)
+  canvas.rect(21, 27, 23, 32, C.tuskShade)
+  canvas.rect(41, 27, 43, 32, C.tuskShade)
+
+  // Eyes: narrow red slits under two separate brows angled down at the nose — a
+  // single full-width band instead reads as goggles, not rage.
+  canvas.polygon([[20, 10], [29, 14], [20, 16]], C.deep)
+  canvas.polygon([[44, 10], [35, 14], [44, 16]], C.deep)
+  canvas.ellipse(26, 17, 3.8, 1.8, C.eyeRed)
+  canvas.ellipse(38, 17, 3.8, 1.8, C.eyeRed)
+  canvas.ellipse(26, 17, 1.4, 1.4, C.eyeDark)
+  canvas.ellipse(38, 17, 1.4, 1.4, C.eyeDark)
+  canvas.set(25, 16, C.glint)
+  canvas.set(37, 16, C.glint)
+  // Nose flared over the maw.
+  canvas.ellipse(32, 20, 4, 1.5, C.mid)
   canvas.halo(new Set([9, 10, 11, 18, 19, 7]))
   canvas.halo(new Set([14, 15, 16, 17]))
+
+  /* Shout lines. They have to touch the jaw: floating dashes read as litter. */
+  for (const y of [23, 28, 33]) {
+    canvas.rect(8, y, 17, y, C.outline)
+    canvas.rect(47, y, 56, y, C.outline)
+  }
   return canvas
 }
 

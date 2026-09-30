@@ -112,6 +112,19 @@ const ORK_W = 122
 const ORK_H = Math.round((ORK_W * 160) / 128)
 /** How far the mascot hangs outside the card, which sets the card's gutter. */
 const FLOAT_OUT = 52
+/**
+ * 12-point comic starburst, used as the shout bubble's `clip-path`. A rounded
+ * speech bubble says "indoor voice"; a starburst says the Ork is bellowing.
+ */
+function starburst(points = 12, inner = 60): string {
+  const coords: string[] = []
+  for (let i = 0; i < points * 2; i += 1) {
+    const angle = (Math.PI * i) / points - Math.PI / 2
+    const radius = i % 2 === 0 ? 50 : inner
+    coords.push(`${(50 + radius * Math.cos(angle)).toFixed(1)}% ${(50 + radius * Math.sin(angle)).toFixed(1)}%`)
+  }
+  return `polygon(${coords.join(',')})`
+}
 
 const CSS = [
   /*
@@ -148,12 +161,11 @@ const CSS = [
   'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip .54s step-end infinite}',
   'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
   '@keyframes waaagh-shout-flip{0%{background-position:0 0}33.33%{background-position:0 50%}66.66%{background-position:0 100%}}',
-  /* …with a comic "WAAAGH!" burst above its head. Kept short (the burst is a
-     label, not a sentence) and clear of the draft's first line. */
-  `.waaagh-burst{position:absolute;left:-22%;top:-56%;display:none;padding:5px 9px;font:800 12px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:#12200a;background:${GREEN};border:2px solid #24380f;border-radius:12px;box-shadow:2px 2px 0 rgba(20,32,10,.35);transform:rotate(-8deg);white-space:nowrap}`,
-  '.waaagh-burst::after{content:"";position:absolute;left:20px;bottom:-9px;border:6px solid transparent;border-top-color:#24380f}',
-  'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop .9s ease-in-out infinite}',
-  '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-8deg) scale(.9)}45%{transform:rotate(-4deg) scale(1.08)}}',
+  /* …with a comic "WAAAGH!" starburst beside his head (not a rounded bubble, and
+     not covering the draft's first line). */
+  `.waaagh-burst{position:absolute;left:-30%;top:-26%;display:none;padding:17px 13px;font:900 15px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;color:#0f1a06;background:${GREEN};clip-path:${starburst()};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-8deg);white-space:nowrap}`,
+  'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop .62s ease-in-out infinite}',
+  '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-7deg) scale(.88)}45%{transform:rotate(-11deg) scale(1.12)}}',
   '.waaagh-toggle{flex:none;height:28px;color:' + GREEN + ';cursor:pointer;background:0 0;border:1px solid ' + GREEN + ';border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;transition:transform .12s ease,background .12s ease}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}.waaagh-toggle:active{transform:scale(.94)}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
   '.waaagh-settings-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
