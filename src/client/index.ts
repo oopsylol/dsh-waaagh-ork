@@ -136,12 +136,19 @@ function starburst(points = 12, inner = 60): string {
 
 const CSS = [
   /*
-   * The mascot stands in the page margin beside the bubble, clear of it, and the
-   * card keeps only a normal text inset. Centring uses the box offset (not
-   * `transform`) so every animation below owns `transform` outright.
+   * The mascot stands in the margin beside the bubble, clear of it, and the card
+   * keeps only a normal text inset. `z-index` matters: the desktop's sidebar and
+   * chat column are siblings, and the mascot was being painted under the sidebar.
+   * Width and left are re-derived from the real DOM by `fitMascot` — the desktop
+   * leaves only ~68px of margin, so a fixed 122px mascot runs under the sidebar.
+   * Centring uses the box offset (not `transform`) so the animations own
+   * `transform` outright.
    */
   'html[data-waaagh-orc] [data-composer-card]{padding-left:18px!important}',
-  `.waaagh-orc{position:absolute;left:calc(-1 * clamp(60px, ${FLOAT_OUT}px, 13vw));top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  `.waaagh-orc{position:absolute;z-index:40;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  /* Working: the composer keeps its corner to the draft. The Ork is in the
+     transcript instead, following the model's status line. */
+  'html[data-waaagh-running=on] .waaagh-orc{display:none}',
   /*
    * Waiting: two idle sets, each a two-frame strip (eyes open, eyes shut). The set
    * is picked on load and rotated on a timer — one fixed pose forever is what the
@@ -158,27 +165,20 @@ const CSS = [
      the owner renders `[data-composer-placeholder]` only while the draft is
      empty, which is the one draft signal available without touching the editor. */
   '[data-composer-card]:not(:has([data-composer-placeholder])) .waaagh-orc{filter:saturate(1.18) brightness(1.06)}',
-  /* While a turn runs the Ork chants: bob, sway, glow. */
-  'html[data-waaagh-running=on] .waaagh-orc{animation:waaagh-chant .9s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(75,191,42,.55)) saturate(1.25)}',
-  /* And it barks once when a message of yours lands in the transcript. */
+  /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working: three shout sets — waving, flailing the choppa, dakka — each five
-   * frames in one strip. The set is drawn per run and re-drawn on a timer while a
-   * long turn keeps going, and the flip is a five-step `background-position` walk
-   * at roughly 350ms a frame: three frames read as a flicker.
+   * Working, in the transcript. The Ork is inserted next to the running status
+   * line — the "deep diving" row — as an in-flow flex child, so it sits in the
+   * reply and scrolls with it instead of decorating the composer. Three shout
+   * sets, five frames each, ~350ms a frame.
    */
-  `.waaagh-body{position:absolute;inset:0;display:none;background-image:url("${orkShoutA}");background-size:100% 500%;background-position:0 0;background-repeat:no-repeat}`,
-  `html[data-waaagh-set=b] .waaagh-body{background-image:url("${orkShoutB}")}`,
-  `html[data-waaagh-set=c] .waaagh-body{background-image:url("${orkShoutC}")}`,
-  'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip 1.75s step-end infinite}',
-  'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
+  `.waaagh-stream-orc{flex:none;align-self:center;width:64px;height:80px;margin-right:6px;pointer-events:none;background-image:url("${orkShoutA}");background-size:100% 500%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-shout-flip 1.75s step-end infinite}`,
+  `html[data-waaagh-set=b] .waaagh-stream-orc{background-image:url("${orkShoutB}")}`,
+  `html[data-waaagh-set=c] .waaagh-stream-orc{background-image:url("${orkShoutC}")}`,
+  `.waaagh-stream-burst{flex:none;align-self:center;margin-right:8px;padding:14px 11px;font:900 13px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:#0f1a06;background:${GREEN};clip-path:${starburst(10, 62)};filter:drop-shadow(1px 1px 0 #24380f);transform:rotate(-6deg);white-space:nowrap;animation:waaagh-burst-pop 1.1s ease-in-out infinite}`,
   '@keyframes waaagh-shout-flip{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
-  /* …with a comic "WAAAGH!" starburst out in the margin beside him: above his head
-     it lands on the transcript, and over the card it lands on the draft. */
-  `.waaagh-burst{position:absolute;left:-84%;top:6%;display:none;padding:17px 13px;font:900 15px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;color:#0f1a06;background:${GREEN};clip-path:${starburst()};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-8deg);white-space:nowrap}`,
-  'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop 1.1s ease-in-out infinite}',
-  '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-7deg) scale(.88)}45%{transform:rotate(-11deg) scale(1.12)}}',
+  '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-6deg) scale(.94)}45%{transform:rotate(-9deg) scale(1.06)}}',
   '.waaagh-toggle{flex:none;height:28px;color:' + GREEN + ';cursor:pointer;background:0 0;border:1px solid ' + GREEN + ';border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;transition:transform .12s ease,background .12s ease}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}.waaagh-toggle:active{transform:scale(.94)}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
   '.waaagh-settings-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
@@ -269,7 +269,7 @@ const CSS = [
   '@keyframes waaagh-shout{from{transform:translateY(0) rotate(-1.4deg)}to{transform:translateY(-2px) rotate(1.4deg)}}',
   '@keyframes waaagh-dakka{0%{transform:scale(.55) rotate(-16deg);filter:brightness(2.4)}55%{transform:scale(1.2) rotate(9deg)}100%{transform:scale(1) rotate(0);filter:none}}',
   /* one switch turns the whole menagerie off */
-  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::before,html[data-waaagh-running=on] .waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-body,html[data-waaagh-running=on] .waaagh-burst,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
+  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::before,html[data-waaagh-send] .waaagh-orc,.waaagh-stream-orc,.waaagh-stream-burst,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
 ].join('\n')
 
 const TAG_ID = 'dsh-waaagh-ork/styles'
@@ -342,6 +342,30 @@ function pickOtherSet(sets: readonly string[], current: string | undefined): str
   const others = sets.filter((set) => set !== current)
   return pickSet(others.length > 0 ? others : sets)
 }
+/**
+ * Fit the waiting mascot into the margin left of the composer card.
+ *
+ * CSS alone cannot do this: how much room there is depends on the chat column's
+ * width and padding, which only the live layout knows. Measured off the card's own
+ * box, so the mascot is never wider than the space it stands in (and never slides
+ * under the sidebar, which is what a fixed 122px mascot did on the desktop).
+ * @param orc - the mascot element, or null when it is not mounted.
+ */
+function fitMascot(orc: HTMLElement | null): void {
+  if (orc === null || typeof document === 'undefined') return
+  const card = orc.closest('[data-composer-card]') ?? document.querySelector('[data-composer-card]')
+  const column = card?.parentElement ?? null
+  if (card === null || column === null) return
+  const available = card.getBoundingClientRect().left - column.getBoundingClientRect().left
+  // Floor of 76px: the desktop leaves ~68px of margin, and a mascot shrunk to fit
+  // that exactly reads as a thumbnail. `z-index` covers the few pixels that spill.
+  const width = Math.round(Math.max(76, Math.min(ORK_W, available - 6)))
+  const height = Math.round((width * ORK_H) / ORK_W)
+  orc.style.width = `${width}px`
+  orc.style.height = `${height}px`
+  orc.style.left = `-${width + 2}px`
+  orc.style.top = `calc(50% - ${Math.round(height / 2)}px)`
+}
 /** Drop the running label from whichever element carried it. */
 function clearRunningLabel(): void {
   if (typeof document === 'undefined') return
@@ -383,12 +407,66 @@ function findRunningLabel(): Element | null {
   const rows = document.querySelectorAll('[data-chat-flow-kind=turn-process] [data-turn-process]')
   return rows[rows.length - 1]?.querySelector(':scope > span') ?? null
 }
+/** Short bellow for the transcript bubble (the running label keeps the long one). */
+let burstWord = randomBellow(2, 6)
+const STREAM_ORC_CLASS = 'waaagh-stream-orc'
+const STREAM_BURST_CLASS = 'waaagh-stream-burst'
+/** Drop the transcript Ork when the turn ends. */
+function clearStreamOrc(): void {
+  if (typeof document === 'undefined') return
+  for (const node of document.querySelectorAll(`.${STREAM_ORC_CLASS},.${STREAM_BURST_CLASS}`)) node.remove()
+}
 /**
- * Mask the running label with the current run's bellow.
+ * Put the working Ork in the transcript, immediately before the running status
+ * line, as an in-flow flex child.
+ *
+ * The composer is where you type; the Ork is supposed to be following the model's
+ * reply, and the "深度求索中，用时 …" row is the one element that exists exactly as
+ * long as the model is answering. Inserting in-flow (rather than floating it over
+ * the page) means the row makes room for it — nothing gets clipped by the chat
+ * column, which is what happened when the mascot hung off the composer. The row is
+ * re-rendered as the duration ticks, so this is re-asserted from the same observer
+ * pass that tags the running label.
+ */
+function ensureStreamOrc(): void {
+  if (typeof document === 'undefined') return
+  if (!runningNow) {
+    clearStreamOrc()
+    return
+  }
+  const label = findRunningLabel()
+  const row = label === null ? null : (label.closest('[data-chat-running]') ?? label.parentElement)
+  if (row === null) return
+  const orks = document.querySelectorAll(`.${STREAM_ORC_CLASS}`)
+  let orc = orks[0] as HTMLElement | undefined
+  if (orc === undefined) {
+    orc = document.createElement('span')
+    orc.className = STREAM_ORC_CLASS
+    orc.setAttribute('aria-hidden', 'true')
+  }
+  for (let index = 1; index < orks.length; index += 1) orks[index]?.remove()
+  const siblings = document.querySelectorAll(`.${STREAM_BURST_CLASS}`)
+  let burst = siblings[0] as HTMLElement | undefined
+  if (burst === undefined) {
+    burst = document.createElement('span')
+    burst.className = STREAM_BURST_CLASS
+    burst.setAttribute('aria-hidden', 'true')
+  }
+  for (let index = 1; index < siblings.length; index += 1) siblings[index]?.remove()
+  burst.textContent = burstWord
+  if (orc.parentElement !== row) {
+    row.insertBefore(burst, row.firstChild)
+    row.insertBefore(orc, burst)
+  }
+}
+/**
+ * Mask the running label with the current run's bellow, and keep the transcript
+ * Ork beside it.
  */
 function markRunningLabel(): void {
   if (typeof document === 'undefined') return
   clearRunningLabel()
+  ensureStreamOrc()
   if (!runningNow) return
   const label = findRunningLabel()
   if (label === null) return
@@ -442,12 +520,14 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   // Custom image (dynamic sprite).
   const [sprite, setSprite] = React.useState<string | null>(customImage)
   React.useEffect(() => subscribeCustom(setSprite), [])
-  /** The comic burst that shows this run's bellow while the Ork shouts. */
-  const burstRef = React.useRef<HTMLSpanElement | null>(null)
+  /** The mascot element, so `fitMascot` can size it against the real layout. */
+  const orcRef = React.useRef<HTMLDivElement | null>(null)
 
-  // Reserve the card's left gutter only while the Ork is mounted, and rotate the
-  // waiting set every so often: one pose on a loop for a whole session reads as a
-  // still image rather than a mascot.
+  // Reserve the card's left gutter only while the Ork is mounted, rotate the
+  // waiting set every so often (one pose on a loop for a whole session reads as a
+  // still image rather than a mascot), and keep the mascot inside the margin the
+  // layout actually leaves: the desktop only gives it ~68px beside the card, and
+  // anything wider slides under the sidebar.
   React.useEffect(() => {
     if (typeof document === 'undefined') return
     const root = document.documentElement
@@ -456,8 +536,16 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     const id = setInterval(() => {
       root.dataset.waaaghIdle = pickOtherSet(IDLE_SETS, root.dataset.waaaghIdle)
     }, IDLE_SWAP_MS)
+    const resize = (): void => fitMascot(orcRef.current)
+    resize()
+    window.addEventListener('resize', resize)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize)
+    const card = document.querySelector('[data-composer-card]')
+    if (observer !== null && card !== null) observer.observe(card)
     return () => {
       clearInterval(id)
+      window.removeEventListener('resize', resize)
+      observer?.disconnect()
       delete root.dataset.waaaghOrc
     }
   }, [])
@@ -478,14 +566,14 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   React.useEffect(() => {
     if (!running) return
     runningWord = randomBellow()
+    burstWord = randomBellow(2, 6)
     const root = document.documentElement
     root.dataset.waaaghSet = pickSet(SHOUT_SETS)
-    if (burstRef.current !== null) burstRef.current.textContent = randomBellow(2, 6)
     markRunningLabel()
     const id = setInterval(() => {
       root.dataset.waaaghSet = pickOtherSet(SHOUT_SETS, root.dataset.waaaghSet)
       runningWord = randomBellow()
-      if (burstRef.current !== null) burstRef.current.textContent = randomBellow(2, 6)
+      burstWord = randomBellow(2, 6)
       markRunningLabel()
     }, SHOUT_SWAP_MS)
     return () => clearInterval(id)
@@ -509,30 +597,26 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
       clearRunningLabel()
+      clearStreamOrc()
     }
     return () => {
       runningNow = false
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
       clearRunningLabel()
+      clearStreamOrc()
     }
   }, [running, wordIndex])
 
   const isCustom = sprite !== null
-  return React.createElement(
-    'div',
-    {
-      className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
-      // The custom avatar feeds the idle head layer's variable.
-      style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
-      title: 'WAAAGH',
-      'aria-hidden': true
-    },
-    // Working: the full-body shouting Ork and its comic burst (both hidden while
-    // waiting, where the head above carries the mascot).
-    React.createElement('span', { className: 'waaagh-body' }),
-    React.createElement('span', { ref: burstRef, className: 'waaagh-burst' })
-  )
+  return React.createElement('div', {
+    ref: orcRef,
+    className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
+    // The custom avatar feeds the idle head layer's variable.
+    style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
+    title: 'WAAAGH',
+    'aria-hidden': true
+  })
 }
 
 // ── WaaaghToggle (conversation.input.right): output-mask reveal ──────────────

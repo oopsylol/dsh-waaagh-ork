@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.8.0 (2026-09-30)
+
+Two things the desktop screenshot made obvious.
+
+- **Nothing is hidden under the sidebar any more.** The desktop's chat column
+  leaves only ~68px of margin beside the card, so a fixed 122px mascot ran under
+  the sidebar — and had no `z-index`, so paint order could bury it too. The mascot
+  now carries `z-index:40` and `fitMascot()` measures the space off the live layout
+  (card left minus column left) and sizes/repositions him to fit, with a 76px floor
+  so he never shrinks to a thumbnail. Re-measured on resize and whenever the card
+  resizes.
+- **The working Ork moved into the transcript.** He was decorating the composer,
+  which is where you type, not where the model works. While a turn runs he is now
+  inserted as an in-flow flex child immediately before the running status line —
+  the "深度求索中，用时 …" row, the one element that exists exactly as long as the
+  model is answering — together with his bellow bubble, so he scrolls with the
+  reply and follows it. In-flow rather than floating: the row makes room for him,
+  so nothing is clipped by the chat column and nothing overlaps the bubble. The row
+  re-renders as the duration ticks, so the same observer pass that tags the running
+  label re-asserts him; the composer mascot hides for the duration and comes back
+  when the turn ends.
+- The action set still swaps every 9s and the bellow with it, now driving the
+  transcript Ork instead of the composer one.
+
 ## 0.7.0 (2026-09-30)
 
 The loops were flipbooks with three frames — too few, so every action read as a
