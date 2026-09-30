@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.4 (2026-09-30)
+
+The left-hand Ork is no longer a bare sprite on the card: it now stands on a
+bolted armour plate, all of it CSS (no new assets).
+
+- Plate: gunmetal gradient with brushed scratches, a top bevel and an inner
+  shadow so it reads as a cast slab rather than a flat patch.
+- Warhammer trim: yellow/black hazard stripe across the top, a riveted seam of
+  four bolts down the visible right-hand armour, a row of bone teef along the
+  bottom, and a saw-tooth silhouette generated as a `clip-path` polygon (five
+  teef per edge, so it scales with the plate).
+- The face moved to its own layer (`::before`, inset inside the plate) so a
+  custom avatar swaps in through the `--waaagh-face` variable and never fights
+  the plate for `background-image` slots; the blink overlay follows the same box.
+- The sprite's alpha decided the layout: it is opaque on its left/top and
+  transparent on its right, so the face is pulled left and up and the armour
+  stays visible on the right seam and along the bottom.
+- Plate is 118px with a 124px composer gutter (was a flat 96px sprite on a 100px
+  gutter); every existing animation still drives it unchanged.
+
 ## 0.2.3 (2026-09-30)
 
 More Ork: seven small animations, all CSS-only and all switched off under

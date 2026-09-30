@@ -11,9 +11,10 @@
  * What it does:
  *   1. Green Ork skin: the composer card gets a vivid green border/glow and the
  *      primary send button becomes a green "Waaagh!" pill.
- *   2. A big derpy pixel-Ork HEAD (sprite, background-image) stands on the left
- *      of the composer and blinks; while a turn runs it writes cycling Ork
- *      gibberish into the composer placeholder.
+ *   2. The pixel-Ork HEAD (sprite, background-image) stands at the left of the
+ *      composer on a bolted armour plate — gunmetal, hazard stripe, a riveted
+ *      right seam, a row of bone teef and a saw-tooth silhouette — and blinks;
+ *      while a turn runs it writes cycling Ork gibberish into the placeholder.
  *   3. Output mask: assistant thinking + prose are hidden and replaced by a
  *      green "Waaaaaaagh!!!". It is STATIC for finished turns and only animates
  *      (growing a's, GPU clip-path) while the turn is streaming.
@@ -100,13 +101,108 @@ function subscribeCustom(listener: (value: string | null) => void): () => void {
   }
 }
 
+// ── the Ork's armour plate ────────────────────────────────────────────────────
+/** One background layer of the plate: the image plus its own geometry. */
+interface PlateLayer {
+  image: string
+  size: string
+  position: string
+  repeat?: string
+}
+
+/** Plate edge length in pixels; the composer gutter below is derived from it. */
+const PLATE = 118
+/**
+ * Box the face occupies inside the plate (`top right bottom left`). The sprite
+ * is opaque on its left/top and transparent on its right, so the face is pulled
+ * left and up: that leaves the hazard stripe, the right-hand rivet column and
+ * the teef row on visible armour.
+ */
+const FACE_INSET = '12% 12% 14% 8%'
+/** A single steel rivet, drawn as concentric rings. */
+const RIVET =
+  'radial-gradient(circle at 50% 50%,#cdd8bd 0 1.4px,#6d7a5e 1.4px 2.6px,rgba(0,0,0,.65) 2.6px 3.6px,transparent 3.7px)'
+/**
+ * Armour layers, topmost first: a hazard stripe across the top, a row of ivory
+ * teef along the bottom, a green under-glow, a rivet column down the right edge,
+ * brushed scratches, a top bevel and the gunmetal base.
+ */
+const PLATE_LAYERS: PlateLayer[] = [
+  { image: 'repeating-linear-gradient(45deg,#c9a227 0 4px,#171204 4px 8px)', size: '100% 8px', position: '0 2px' },
+  /* Bone teef: the classic two-layer 45°/−45° zigzag, tiled along the bottom so
+     the saw-tooth silhouette's lower edge comes out ivory instead of gunmetal. */
+  {
+    image: 'linear-gradient(45deg,#e8dfbe 25%,transparent 25% 75%,#e8dfbe 75%)',
+    size: '12px 12px',
+    position: '0 calc(100% - 11px)',
+    repeat: 'repeat-x'
+  },
+  {
+    image: 'linear-gradient(-45deg,#e8dfbe 25%,transparent 25% 75%,#e8dfbe 75%)',
+    size: '12px 12px',
+    position: '6px calc(100% - 11px)',
+    repeat: 'repeat-x'
+  },
+  { image: 'radial-gradient(70% 60% at 50% 102%,rgba(75,191,42,.3),transparent 70%)', size: '100% 100%', position: '0 0' },
+  /* A riveted seam down the visible right-hand armour: four bolts, evenly set. */
+  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 14px' },
+  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 42px' },
+  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 70px' },
+  { image: RIVET, size: '13px 13px', position: 'calc(100% - 26px) 98px' },
+  {
+    image: 'repeating-linear-gradient(115deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px)',
+    size: 'auto',
+    position: '0 0',
+    repeat: 'repeat'
+  },
+  { image: 'linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 44%)', size: '100% 100%', position: '0 0' },
+  /* Inner shadow: makes the plate read as a thick cast slab, not a flat patch. */
+  { image: 'radial-gradient(120% 120% at 50% 50%,transparent 52%,rgba(0,0,0,.5))', size: '100% 100%', position: '0 0' },
+  { image: 'linear-gradient(160deg,#4a5942,#2a3324 58%,#141a11)', size: '100% 100%', position: '0 0' }
+]
+const plateProperty = (pick: (layer: PlateLayer) => string): string => PLATE_LAYERS.map(pick).join(',')
+/**
+ * Saw-tooth outline: a rectangle whose four edges are cut into triangular teef
+ * pointing outwards. Percent based, so it scales with the box.
+ * @param teeth - teeth per edge.
+ * @param depth - tooth depth as a percentage of the edge.
+ */
+function teefOutline(teeth = 5, depth = 7): string {
+  const step = 100 / teeth
+  const points: string[] = []
+  const at = (x: number, y: number): void => {
+    points.push(`${x.toFixed(2)}% ${y.toFixed(2)}%`)
+  }
+  for (let i = 0; i < teeth; i += 1) {
+    at(depth, i * step)
+    at(0, i * step + step / 2)
+  }
+  for (let i = 0; i < teeth; i += 1) {
+    at(i * step, 100 - depth)
+    at(i * step + step / 2, 100)
+  }
+  for (let i = 0; i < teeth; i += 1) {
+    at(100 - depth, 100 - i * step)
+    at(100, 100 - (i * step + step / 2))
+  }
+  for (let i = 0; i < teeth; i += 1) {
+    at(100 - i * step, depth)
+    at(100 - (i * step + step / 2), 0)
+  }
+  return `polygon(${points.join(',')})`
+}
+
 const CSS = [
-  /* Big derpy Ork head on the left edge of the composer card. Centring uses the
-     box offset (not `transform`) so every animation below can drive `transform`
-     without having to re-state it in each keyframe. */
-  'html[data-waaagh-orc] [data-composer-card]{padding-left:100px!important}',
-  `.waaagh-orc{position:absolute;left:0;top:calc(50% - 48px);width:96px;height:96px;background-image:url("${orkOpen}");background-size:contain;background-position:center;background-repeat:no-repeat;background-color:transparent;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
-  `.waaagh-orc::after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:url("${orkClosed}");background-size:contain;background-position:center;background-repeat:no-repeat;animation:waaagh-blink 3.6s infinite}`,
+  /* The Ork stands on a bolted-on armour plate at the left edge of the composer
+     card: gunmetal base, hazard stripe, four rivets, a row of teef along the
+     bottom, and a saw-tooth silhouette. Centring uses the box offset (not
+     `transform`) so every animation below owns `transform` outright. */
+  `html[data-waaagh-orc] [data-composer-card]{padding-left:${PLATE + 6}px!important}`,
+  `.waaagh-orc{position:absolute;left:0;top:calc(50% - ${PLATE / 2}px);width:${PLATE}px;height:${PLATE}px;background-color:transparent;border:none;cursor:default;padding:0;pointer-events:none;background-image:${plateProperty((layer) => layer.image)};background-size:${plateProperty((layer) => layer.size)};background-position:${plateProperty((layer) => layer.position)};background-repeat:${plateProperty((layer) => layer.repeat ?? 'no-repeat')};clip-path:${teefOutline()};animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  /* The face rides its own layer so a custom avatar can be swapped in by variable
+     and never has to fight the plate for `background-image` slots. */
+  `.waaagh-orc::before{content:"";position:absolute;inset:${FACE_INSET};background-image:var(--waaagh-face,url("${orkOpen}"));background-size:contain;background-position:left center;background-repeat:no-repeat}`,
+  `.waaagh-orc::after{content:"";position:absolute;inset:${FACE_INSET};background-image:url("${orkClosed}");background-size:contain;background-position:left center;background-repeat:no-repeat;animation:waaagh-blink 3.6s infinite}`,
   '@keyframes waaagh-blink{0%,92%,100%{opacity:0}95%,97%{opacity:1}}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
      the owner renders `[data-composer-placeholder]` only while the draft is
@@ -383,7 +479,9 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   const isCustom = sprite !== null
   return React.createElement('div', {
     className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
-    style: isCustom ? { backgroundImage: `url("${sprite}")` } : undefined,
+    // The custom avatar feeds the face layer's variable; the plate keeps its
+    // own background slots either way.
+    style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
     title: 'WAAAGH',
     'aria-hidden': true
   })
