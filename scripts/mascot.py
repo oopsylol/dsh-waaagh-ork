@@ -62,10 +62,15 @@ PROMPTS = {
     "眼睛睁得大大的、眼珠还是歪的，像在兴奋地喊口号。",
     "shout-a3": STYLE + "姿势改为：双拳举过头顶、双脚离地小跳一下，嘴巴张到最大傻叫，舌头伸出来，"
     "眼睛亮晶晶地往上看着，一副开心到不行的样子。",
+    "shout-a4": STYLE + "姿势改为：两只小短手向身体两侧张开、掌心朝前，脑袋歪向一边，嘴巴张大傻叫，舌头伸出来。",
+    "shout-a5": STYLE + "姿势改为：身体扭向一侧、一只脚抬起来像在蹦跶，两只手一只高一只低地乱挥，"
+    "眼睛笑成一条线，开心得不行。",
     # --- shout set B: flailing the blunt little choppa around
     "shout-b1": STYLE + "姿势改为：双手把小砍刀举过头顶正要往下挥，身体向后仰，嘴巴张大傻叫，舌头伸出来。",
     "shout-b2": STYLE + "姿势改为：小砍刀挥到身体正前方，身体跟着向前弯，一只脚抬起来，嘴巴张得大大的傻叫。",
     "shout-b3": STYLE + "姿势改为：小砍刀甩到身体另一侧，人被自己带得歪向一边，眼睛笑成一条线，舌头伸出来。",
+    "shout-b4": STYLE + "姿势改为：小砍刀垂在身体前面快要碰到地面，人被惯性带着弯下腰，嘴巴张得大大的傻叫。",
+    "shout-b5": STYLE + "姿势改为：小砍刀甩到肩膀后面，身体跟着转向另一边，眼睛笑成一条线，舌头伸出来。",
     # --- shout set C: dakka. Chained c2/c3 off c1, not off the base: referenced to
     # the unarmed base the model kept inventing a different weapon for each frame.
     "shout-c1": STYLE + "姿势改为：双手端着一把又小又简陋的哒哒枪往前乱开火（枪口喷出小小的火花），"
@@ -74,42 +79,62 @@ PROMPTS = {
     "闭起一只眼睛瞄准，嘴巴咧开傻笑。",
     "shout-c3": STYLE + "继续用参考图里的那把枪，姿势改为：把小枪举到头顶乱射，开心得眼睛弯成弧线，"
     "嘴巴张到最大傻叫，舌头伸出来。",
-    # --- idle set A: standing, scratching his head
+    "shout-c4": STYLE + "继续用参考图里的那把枪，姿势改为：一只手把还在冒烟的小枪举高，另一只手给自己扇风，"
+    "眯起一只眼睛傻笑。",
+    "shout-c5": STYLE + "继续用参考图里的那把枪，姿势改为：两只手一上一下地端着枪乱扫，身体被后坐力推得歪向一边，"
+    "嘴巴张到最大傻叫，舌头伸出来。",
+    # --- idle set A: standing, scratching his head. Three frames: open, half
+    # shut, shut, so the blink is a roll rather than a flicker.
     "idle-a1": STYLE + "姿势改为：站在原地挠着后脑勺傻笑，另一只手扶着插在地上的小砍刀，嘴巴咧开露出两颗小獠牙，"
     "眼睛半眯着显得又懒又傻，整个人是“等着被派活、脑子空空的”样子。",
-    "idle-a1-blink": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
-    "把眼睛闭上，闭成两条向下的黑线（正在眨眼），不要动其它任何地方。16-bit 像素风、粗黑描边、全身、居中。",
+    "idle-a2": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
+    "把眼睛闭到一半（眼皮盖住眼珠的下半部分，正在眨眼的中途），不要动其它任何地方。",
+    "idle-a3": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
+    "把眼睛完全闭上，闭成两条向下的黑线（正在眨眼），不要动其它任何地方。",
     # --- idle set B: sitting on the ground
     "idle-b1": STYLE + "姿势改为：一屁股坐在地上，两条小短腿往前伸直，一只手撑地、另一只手挠着圆肚子，"
     "脑袋歪向一边傻笑，眼睛又大又圆、一只眼珠歪向旁边，一副无所事事的呆样。",
-    "idle-b1-blink": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
-    "把眼睛闭上，闭成两条向下的黑线（正在眨眼），不要动其它任何地方。16-bit 像素风、粗黑描边、全身、居中。",
+    "idle-b2": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
+    "把眼睛闭到一半（眼皮盖住眼珠的下半部分，正在眨眼的中途），不要动其它任何地方。",
+    "idle-b3": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
+    "把眼睛完全闭上，闭成两条向下的黑线（正在眨眼），不要动其它任何地方。",
 }
 # Shout frames are generated first so every later frame can reference one settled
-# design; the rest of the sheet then hangs off it.
+# design; within a set the frames hang off the set's own first frame, because the
+# unarmed base made the model invent a different prop for every pose.
 REFERENCES = {
     "shout-a2": None,
     "shout-a1": "shout-a2",
     "shout-a3": "shout-a2",
+    "shout-a4": "shout-a1",
+    "shout-a5": "shout-a3",
     "shout-b1": "shout-a2",
     "shout-b2": "shout-a2",
     "shout-b3": "shout-a2",
+    "shout-b4": "shout-b1",
+    "shout-b5": "shout-b3",
     "shout-c1": "shout-a2",
     "shout-c2": "shout-c1",
     "shout-c3": "shout-c1",
+    "shout-c4": "shout-c3",
+    "shout-c5": "shout-c2",
     "idle-a1": "shout-a2",
-    "idle-a1-blink": "idle-a1",
+    "idle-a2": "idle-a1",
+    "idle-a3": "idle-a1",
     "idle-b1": "shout-a2",
-    "idle-b1-blink": "idle-b1",
+    "idle-b2": "idle-b1",
+    "idle-b3": "idle-b1",
 }
-# Every working strip is three frames and every idle strip is two (open, blink),
-# so one pair of CSS animations walks all of them and only the image changes.
+# Idle strips are three frames (open, half shut, shut) and shout strips are five,
+# so each state walks its frames with one pair of CSS animations and only the
+# image changes between sets. Five frames is the difference between a flipbook and
+# a flicker: at three the loop read as "changing too fast".
 STRIPS = {
-    "ork-idle-a.png": ["idle-a1", "idle-a1-blink"],
-    "ork-idle-b.png": ["idle-b1", "idle-b1-blink"],
-    "ork-shout-a.png": ["shout-a1", "shout-a2", "shout-a3"],
-    "ork-shout-b.png": ["shout-b1", "shout-b2", "shout-b3"],
-    "ork-shout-c.png": ["shout-c1", "shout-c2", "shout-c3"],
+    "ork-idle-a.png": ["idle-a1", "idle-a2", "idle-a3"],
+    "ork-idle-b.png": ["idle-b1", "idle-b2", "idle-b3"],
+    "ork-shout-a.png": ["shout-a1", "shout-a2", "shout-a3", "shout-a4", "shout-a5"],
+    "ork-shout-b.png": ["shout-b1", "shout-b2", "shout-b3", "shout-b4", "shout-b5"],
+    "ork-shout-c.png": ["shout-c1", "shout-c2", "shout-c3", "shout-c4", "shout-c5"],
 }
 
 

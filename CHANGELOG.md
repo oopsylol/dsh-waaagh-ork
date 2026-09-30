@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.7.0 (2026-09-30)
+
+The loops were flipbooks with three frames — too few, so every action read as a
+flicker — and a long turn replayed the same one the whole way through.
+
+- **Five frames per shout set** (was three) and **three per idle set** (was two).
+  The idle blink is now a real eyelid roll: open, half shut, shut. 8 new frames
+  generated, 124s of API time.
+- **Slower walk**: the shout flip went 1.05s → 1.75s for five frames, i.e. ~350ms
+  a frame at both ends of the change — smoother *and* calmer.
+- **A long turn swaps sets.** Every 9s while the model is still replying the Ork
+  changes action (`a`/`b`/`c`) and draws a fresh bellow, so a two-minute answer
+  gets a changing mascot instead of one loop on repeat. The waiting pose rotates
+  every 20s, and its timer now always picks a *different* set rather than possibly
+  re-picking the same one.
+- Fixed along the way: the burst text was being redrawn on every placeholder tick
+  (700ms), so the bellow flickered. It is drawn once per run and once per set
+  swap now. Verified live: blink walks three positions, flip walks five, and the
+  set reads `b b b a a b` across a long turn with the bellow stable inside each.
+
 ## 0.6.0 (2026-09-30)
 
 Three fixes from watching it in the app:

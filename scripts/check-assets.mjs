@@ -10,14 +10,14 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 const assets = join(fileURLToPath(new URL('..', import.meta.url)), 'src', 'assets')
-/** file → [width, height]. Every mascot strip frame is 128x160, idle pairs and shout triples. */
+/** file → [width, height]. Idle strips are three frames (open, half, shut), shout strips five. */
 const EXPECTED = [
   ['ork-open.png', 144, 144],
-  ['ork-idle-a.png', 128, 160 * 2],
-  ['ork-idle-b.png', 128, 160 * 2],
-  ['ork-shout-a.png', 128, 160 * 3],
-  ['ork-shout-b.png', 128, 160 * 3],
-  ['ork-shout-c.png', 128, 160 * 3]
+  ['ork-idle-a.png', 128, 160 * 3],
+  ['ork-idle-b.png', 128, 160 * 3],
+  ['ork-shout-a.png', 128, 160 * 5],
+  ['ork-shout-b.png', 128, 160 * 5],
+  ['ork-shout-c.png', 128, 160 * 5]
 ]
 
 let failed = false

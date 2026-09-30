@@ -148,11 +148,12 @@ const CSS = [
    * corner was before. Set A is the default so the stylesheet still works before
    * the script has chosen.
    */
-  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkIdleA}"));background-size:100% 200%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-blink 4.6s step-end infinite}`,
+  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkIdleA}"));background-size:100% 300%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-blink 5s step-end infinite}`,
   `html[data-waaagh-idle=b] .waaagh-orc::before{background-image:var(--waaagh-face,url("${orkIdleB}"))}`,
   /* A custom avatar is one still image: no strip, so no blink walk. */
   '.waaagh-custom::before{background-size:contain!important;background-position:center!important;animation:none!important}',
-  '@keyframes waaagh-blink{0%,92%{background-position:0 0}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
+  /* Three frames (open, half shut, shut) walked as an eyelid roll, not a flicker. */
+  '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
      the owner renders `[data-composer-placeholder]` only while the draft is
      empty, which is the one draft signal available without touching the editor. */
@@ -162,17 +163,17 @@ const CSS = [
   /* And it barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working: three shout sets — waving, flailing the choppa, dakka — each three
-   * frames in one strip. The set is drawn per run so a long session does not
-   * replay the same loop, and the flip is a three-step `background-position` walk
-   * at roughly three frames a second.
+   * Working: three shout sets — waving, flailing the choppa, dakka — each five
+   * frames in one strip. The set is drawn per run and re-drawn on a timer while a
+   * long turn keeps going, and the flip is a five-step `background-position` walk
+   * at roughly 350ms a frame: three frames read as a flicker.
    */
-  `.waaagh-body{position:absolute;inset:0;display:none;background-image:url("${orkShoutA}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
+  `.waaagh-body{position:absolute;inset:0;display:none;background-image:url("${orkShoutA}");background-size:100% 500%;background-position:0 0;background-repeat:no-repeat}`,
   `html[data-waaagh-set=b] .waaagh-body{background-image:url("${orkShoutB}")}`,
   `html[data-waaagh-set=c] .waaagh-body{background-image:url("${orkShoutC}")}`,
-  'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip 1.05s step-end infinite}',
+  'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip 1.75s step-end infinite}',
   'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
-  '@keyframes waaagh-shout-flip{0%{background-position:0 0}33.33%{background-position:0 50%}66.66%{background-position:0 100%}}',
+  '@keyframes waaagh-shout-flip{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
   /* …with a comic "WAAAGH!" starburst out in the margin beside him: above his head
      it lands on the transcript, and over the card it lands on the draft. */
   `.waaagh-burst{position:absolute;left:-84%;top:6%;display:none;padding:17px 13px;font:900 15px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;color:#0f1a06;background:${GREEN};clip-path:${starburst()};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-8deg);white-space:nowrap}`,
@@ -329,9 +330,17 @@ let runningWord = randomBellow()
  */
 const IDLE_SETS = ['a', 'b']
 const SHOUT_SETS = ['a', 'b', 'c']
+/** How often a long turn swaps to another shout set, and idle swaps its pose. */
+const SHOUT_SWAP_MS = 9000
+const IDLE_SWAP_MS = 20000
 function pickSet(sets: readonly string[]): string {
   const picked = sets[Math.floor(Math.random() * sets.length)]
   return picked ?? 'a'
+}
+/** Draw a set that is not the current one, so a swap is always visible. */
+function pickOtherSet(sets: readonly string[], current: string | undefined): string {
+  const others = sets.filter((set) => set !== current)
+  return pickSet(others.length > 0 ? others : sets)
 }
 /** Drop the running label from whichever element carried it. */
 function clearRunningLabel(): void {
@@ -445,9 +454,8 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     root.dataset.waaaghOrc = 'on'
     if (!root.dataset.waaaghIdle) root.dataset.waaaghIdle = pickSet(IDLE_SETS)
     const id = setInterval(() => {
-      const others = IDLE_SETS.filter((set) => set !== root.dataset.waaaghIdle)
-      root.dataset.waaaghIdle = pickSet(others.length > 0 ? others : IDLE_SETS)
-    }, 20000)
+      root.dataset.waaaghIdle = pickOtherSet(IDLE_SETS, root.dataset.waaaghIdle)
+    }, IDLE_SWAP_MS)
     return () => {
       clearInterval(id)
       delete root.dataset.waaaghOrc
@@ -464,18 +472,31 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
 
   // One bellow per run: drawn when a turn starts, then reused while it streams
   // (the status node is re-created on every duration tick, so a per-node draw
-  // would reshuffle the a-run once a second). The action set is redrawn with it.
+  // would reshuffle the a-run once a second). The action set is redrawn with it,
+  // and swapped again every few seconds for as long as the turn keeps going — the
+  // Ork is supposed to be following the model's reply, not looping one pose.
   React.useEffect(() => {
     if (!running) return
     runningWord = randomBellow()
-    document.documentElement.dataset.waaaghSet = pickSet(SHOUT_SETS)
+    const root = document.documentElement
+    root.dataset.waaaghSet = pickSet(SHOUT_SETS)
+    if (burstRef.current !== null) burstRef.current.textContent = randomBellow(2, 6)
     markRunningLabel()
+    const id = setInterval(() => {
+      root.dataset.waaaghSet = pickOtherSet(SHOUT_SETS, root.dataset.waaaghSet)
+      runningWord = randomBellow()
+      if (burstRef.current !== null) burstRef.current.textContent = randomBellow(2, 6)
+      markRunningLabel()
+    }, SHOUT_SWAP_MS)
+    return () => clearInterval(id)
   }, [running])
 
   // While running: flag the document, swap the composer placeholder for a
+  // While running: flag the document, swap the composer placeholder for a
   // cycling Ork word (through a CSS variable, so React's own placeholder render
-  // is never fought), turn the running label into "Waaaaaaagh!!!", and put this
-  // run's bellow in the shouting Ork's burst.
+  // is never fought) and turn the running label into "Waaaaaaagh!!!".
+  // This effect re-runs on every placeholder tick, so the burst text is NOT drawn
+  // here: doing that reshuffled the bellow every 700ms and it flickered.
   React.useEffect(() => {
     if (typeof document === 'undefined') return
     const root = document.documentElement
@@ -483,7 +504,6 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     if (running) {
       root.setAttribute('data-waaagh-running', 'on')
       root.style.setProperty('--waaagh-placeholder', JSON.stringify(ORK_WORDS[wordIndex] ?? 'WAAAGH'))
-      if (burstRef.current !== null) burstRef.current.textContent = randomBellow(2, 6)
       markRunningLabel()
     } else {
       root.removeAttribute('data-waaagh-running')
