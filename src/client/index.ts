@@ -182,6 +182,7 @@ const CSS = [
    * bellow itself comes from `--waaagh-running` so its a-run is random per run.
    */
   '[data-waaagh-run-label]{font-size:0!important;background:none!important;animation:none!important;-webkit-text-fill-color:currentColor!important}',
+  '[data-waaagh-run-label] *{background:none!important;-webkit-text-fill-color:currentColor!important}',
   `[data-waaagh-run-label]::before{content:var(--waaagh-running,"Waaaaaaagh!!!");font-size:14px;font-weight:400;color:${GREEN};-webkit-text-fill-color:currentColor}`,
   '[data-waaagh-run-label] > span[class*=Clock]{font-size:13px!important;color:var(--dsw-alias-label-caption);-webkit-text-fill-color:currentColor;margin-left:8px}',
   /* Output mask: hide assistant thinking + prose */
@@ -205,6 +206,24 @@ const CSS = [
   '@media (hover:hover){[data-chat-flow-kind=tool-call] [class*=leading]:hover,[data-chat-flow-kind=context] [class*=leading]:hover,[data-chat-flow-kind=compaction] [data-compaction-icon]:hover{transform:scale(1.25) rotate(-6deg)}}',
   /* keep a failure readable: red ring around the Ork on tool errors */
   '[data-chat-flow-kind=tool-call][data-state=error] [class*=leading]{outline:1px solid #e5484d;outline-offset:1px;border-radius:50%;filter:drop-shadow(0 0 2px rgba(229,72,77,.6))}',
+  /*
+   * 0.2.0's step-process group row ("正在读取文件" / "准备写入文件" …) exposes a
+   * stable icon hook, and its label is process chatter like the rest of them, so
+   * both get the treatment: Ork head, masked label, reveal through 查看详情.
+   */
+  `[data-step-process-icon]{background:url("${orkOpen}") center/contain no-repeat}`,
+  '[data-step-process-icon] > *{visibility:hidden!important}',
+  /* 0.1.7 has no such hook: the same row leaves its glyph in the leading slot. */
+  `[data-chat-flow-kind=turn-process] [class*=leading]{background:url("${orkOpen}") center/contain no-repeat}`,
+  '[data-chat-flow-kind=turn-process] [class*=leading] > *{visibility:hidden!important}',
+  'html:not([data-waaagh=revealed]) [data-process-activity] [class*=label]{font-size:0!important;background:none!important;-webkit-text-fill-color:currentColor!important}',
+  'html:not([data-waaagh=revealed]) [data-process-activity] [class*=label] *{background:none!important;-webkit-text-fill-color:currentColor!important}',
+  `html:not([data-waaagh=revealed]) [data-process-activity] [class*=label]::before{content:var(--waaagh-word,"Waaaaaaagh!!!");font-size:14px;color:${GREEN};-webkit-text-fill-color:currentColor}`,
+  /* The running line's whale tail becomes an Ork head that keeps nodding. */
+  `[data-chat-running] [class*=runningIcon]{background:url("${orkOpen}") center/contain no-repeat}`,
+  '[data-chat-running] [class*=runningIcon] > *{visibility:hidden!important}',
+  'html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon]{animation:waaagh-icon-nod .9s ease-in-out infinite}',
+  '@keyframes waaagh-icon-nod{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}',
   /* the send pill squashes under the finger */
   '@media (hover:hover){' + sendRule('{transition:transform .12s ease}') + sendRule(':hover{transform:scale(1.06)}') + '}',
   sendRule(':active{transform:scale(.93)}'),
@@ -216,7 +235,7 @@ const CSS = [
   '@keyframes waaagh-shout{from{transform:translateY(0) rotate(-1.4deg)}to{transform:translateY(-2px) rotate(1.4deg)}}',
   '@keyframes waaagh-dakka{0%{transform:scale(.55) rotate(-16deg);filter:brightness(2.4)}55%{transform:scale(1.2) rotate(9deg)}100%{transform:scale(1) rotate(0);filter:none}}',
   /* one switch turns the whole menagerie off */
-  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::after,html[data-waaagh-running=on] .waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-body,html[data-waaagh-running=on] .waaagh-burst,[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}.waaagh-orc::after{opacity:0}}'
+  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::after,html[data-waaagh-running=on] .waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-body,html[data-waaagh-running=on] .waaagh-burst,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}.waaagh-orc::after{opacity:0}}'
 ].join('\n')
 
 const TAG_ID = 'dsh-waaagh-ork/styles'
@@ -289,10 +308,17 @@ function clearRunningLabel(): void {
  * @returns the label element, or null when no running label is on screen.
  */
 function findRunningLabel(): Element | null {
-  // Newest layout: the dedicated running indicator.
+  // Newest layout: the dedicated running indicator. 0.2.0 renamed the shimmer's
+  // marker (`data-shimmer`) and moved the text into an inner span, so match the
+  // hash-suffixed `runningText` class first — it survives both revisions — and
+  // keep the two attribute markers as fallbacks.
   for (const el of document.querySelectorAll('[data-chat-running]')) {
-    const label = el.querySelector('[data-text-shimmer]')
-    if (label !== null && el.getBoundingClientRect().height > 4) return label
+    if (el.getBoundingClientRect().height <= 4) continue
+    const label =
+      el.querySelector('[class*=runningText]') ??
+      el.querySelector('[data-shimmer]') ??
+      el.querySelector('[data-text-shimmer]')
+    if (label !== null) return label
   }
   // ≤0.1.6: the visible polite live region IS the running label.
   for (const el of document.querySelectorAll('[data-chat-flow] [role=status][aria-live=polite]')) {
@@ -567,6 +593,7 @@ export function apply(ctx: Context): void {
       for (const child of slot.children) (child as HTMLElement).style.visibility = 'hidden'
       slot.classList.add('waaagh-tool-icon')
     }
+    const PROCESS_ROWS = '[data-process-activity]'
     const scan = (root: Element): void => {
       // A user bubble that just arrived = the message you sent; bark at it.
       // (The grace window keeps a session/app boot from barking at history.)
@@ -578,6 +605,9 @@ export function apply(ctx: Context): void {
       }
       if (root.matches('[data-chat-flow-kind=assistant-step]')) setWord(root)
       for (const el of root.querySelectorAll('[data-chat-flow-kind=assistant-step]')) setWord(el)
+      // Step-process rows carry the per-row bellow for their masked label.
+      if (root.matches(PROCESS_ROWS)) setWord(root)
+      for (const el of root.querySelectorAll(PROCESS_ROWS)) setWord(el)
       if (root.matches('[data-chat-flow-kind=tool-call],[data-chat-flow-kind=context],[data-chat-flow-kind=compaction]')) {
         orkify(root)
       }
@@ -589,6 +619,7 @@ export function apply(ctx: Context): void {
     }
     const FLOW_ROWS = '[data-chat-flow-kind=tool-call],[data-chat-flow-kind=context],[data-chat-flow-kind=compaction]'
     for (const el of document.querySelectorAll('[data-chat-flow-kind=assistant-step]')) setWord(el)
+    for (const el of document.querySelectorAll(PROCESS_ROWS)) setWord(el)
     for (const el of document.querySelectorAll(FLOW_ROWS)) orkify(el)
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.1 (2026-09-30)
+
+Support for the desktop's client build, which is **0.2.0-rc.2** — newer than the
+0.1.7-rc.2 the plugin was typed against, and different in ways that mattered:
+
+- **The blue running line was never masked on the desktop.** 0.2.0's `TextShimmer`
+  dropped `data-text-shimmer` for `data-shimmer` and moved the text into an inner
+  span, so the label finder matched nothing. It now matches the hash-suffixed
+  `runningText` class first (stable across 0.1.7 and 0.2.0) and keeps both
+  attribute markers as fallbacks.
+- **Both icons in the process area are now Ork heads.** The running line's whale
+  tail (`[class*=runningIcon]`, nodding while the turn runs) and 0.2.0's
+  step-process row — `正在读取文件` / `准备写入文件` … — which exposes the stable
+  hook `data-step-process-icon`; 0.1.7 keeps the `turn-process` leading fallback.
+- **The step-process label is masked too** (`[data-process-activity] [class*=label]`),
+  each row drawing its own random bellow, and 查看详情 gives the real wording back.
+- Type contract bumped 0.1.7-rc.2 → 0.2.0-rc.2 for all 25 `@deepseek-ai/*` packages
+  (`tsc --noEmit` clean, so slots/props/snapshot fields are unchanged), and the peer
+  ranges widened to `<0.3.0` so the desktop's version is inside them.
+- Verified by injecting the 0.2.0 markup verbatim (classes and attributes taken from
+  the desktop's ui-chat bundle) into a live instance, starting a real turn, and
+  asserting: label tagged, text at `0px` with the bellow in `::before`, both icons on
+  Ork backgrounds with their glyphs hidden, per-row word set, and 查看详情 restoring
+  the real label.
+
 ## 0.3.0 (2026-09-30)
 
 Composer as a comic strip, with two mascot states:
