@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.1 (2026-09-30)
+
+The brief for the mascot was wrong. 0.5.0 generated a berserker — red slit eyes,
+clenched tusks, charging — when an Ork WAAAGH is a *silly* yell. Regenerated all
+five frames as "cute and daft":
+
+- **Big googly eyes**, one pupil wandered off to the side, never angry red.
+- **Chibi proportions**: three heads tall, a big round skull, a pale round belly,
+  stubby arms and legs, chunky boots.
+- **Goofy details**: tongue out mid-yell, a missing tooth, a plaster on each
+  cheek, a wonky hair tuft, a small blunt choppa, one crooked little spike on a
+  round pauldron.
+- Poses are now cheerful rather than aggressive: waiting he scratches the back of
+  his head with a dopey open-mouthed grin (second frame is the blink); working he
+  waves both arms and hops, mouth wide, tongue out.
+- The prompt sheet in `scripts/mascot.py` carries the whole character description
+  so `--raw` builds and future regeneration stay on-model.
+
 ## 0.5.0 (2026-09-30)
 
 The mascot is generated art now. Hand-drawn pixel art kept losing the likeness at

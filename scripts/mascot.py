@@ -39,26 +39,33 @@ PALETTE_COLORS = 64
 BASE = os.environ.get("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3").rstrip("/")
 MODEL = os.environ.get("VOLC_IMAGE_MODEL", "doubao-seedream-4-0-250828")
 
-# The character sheet every prompt repeats: without it the model redesigns him.
+# The character sheet every prompt repeats. The brief is "cute and daft": an Ork
+# WAAAGH is a silly yell, not a berserker rage, so the eyes are big and googly
+# (never angry red slits), the proportions are chibi and the details are goofy.
 STYLE = (
-    "严格保持参考图中这个角色的设计：亮绿色皮肤、红色眼睛、粗黑描边、16-bit 像素风、"
-    "尖刺金属护肩、棕色腰带（金属带扣）、棕色裤子、金属靴子。整体构图：全身、正面、居中、"
-    "纯色品红背景（#CC1166），背景必须干净无阴影（阴影也必须是同一品红色）、无地面、无文字。"
+    "严格保持参考图中这个角色的设计：亮绿色皮肤、粗黑描边、16-bit 像素风、大大的白色圆眼睛配黑色大眼珠"
+    "（呆萌，不要红眼、不要凶狠）、三头身、又大又圆的脑袋、圆滚滚的小肚子、小短手小短腿、大靴子、"
+    "一撮歪掉的呆毛、脸颊贴着一块创可贴、缺一颗牙、小小的圆护肩上只有一根歪掉的小尖刺、"
+    "手里一把看起来很钝的小砍刀。整体构图：全身、正面、居中、纯色品红背景（#CC1166），"
+    "背景必须干净无阴影（阴影也必须是同一品红色）、无地面、无文字。"
 )
 PROMPTS = {
     # Loop order matters: the stylesheet walks these three in order.
     "shout-b": (
-        "16-bit 像素风游戏精灵图，一个卡通兽人小子（Warhammer 40k greenskin），全身正面，"
-        "正在冲锋咆哮：嘴巴张到最大露出两颗大獠牙和方牙，红眼怒视，亮绿色皮肤，尖刺钢铁护肩，"
-        "棕色腰带加金属带扣，棕色裤子，巨大金属靴子，一拳举在身侧，粗黑描边、平涂色块、无抗锯齿，"
-        "居中，处于纯色品红背景上"
+        "16-bit 像素风游戏精灵图，一只超可爱、傻乎乎的卡通兽人小子（Warhammer 40k greenskin），三头身大头，"
+        "正在开心地大喊大叫：嘴巴张得很大像小朋友在傻叫，舌头伸出来，嘴里两颗小獠牙，"
+        "两只超大的白眼睛配黑色大眼珠、其中一只眼珠歪向另一边（斗鸡眼），圆滚滚的小肚子，"
+        "一撮歪掉的呆毛，脸颊贴着创可贴，缺一颗牙，小短手小短腿和大靴子，"
+        "粗黑描边、平涂色块、无抗锯齿，居中，处于纯色品红背景上，表情是兴奋开心而不是愤怒"
     ),
-    "idle": STYLE + "姿势改为：站立放松待命，双手自然垂在身体两侧，其中一只手扶着插在地上的砍刀刀柄；"
-    "嘴巴闭合但露出两颗下獠牙，眼睛半眯着显得无聊。整体是“等着被派活”的懒得动的样子。",
+    "idle": STYLE + "姿势改为：站在原地挠着后脑勺傻笑，另一只手扶着插在地上的小砍刀，嘴巴咧开露出两颗小獠牙，"
+    "眼睛半眯着显得又懒又傻，整个人是“等着被派活、脑子空空的”样子。",
     "idle-blink": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
-    "把眼睛闭上，闭成一条向下的黑线（正在眨眼），不要动其它任何地方。16-bit 像素风、粗黑描边、全身、居中。",
-    "shout-a": STYLE + "姿势改为：正面咆哮，身体后仰、双臂向两侧后方甩开，嘴巴张到最大正在喊叫，眼睛瞪成愤怒的红眼。",
-    "shout-c": STYLE + "姿势改为：双拳高举过头顶咆哮，身体向上伸展，嘴巴张到最大，红眼怒视前方。",
+    "把眼睛闭上，闭成两条向下的黑线（正在眨眼），不要动其它任何地方。16-bit 像素风、粗黑描边、全身、居中。",
+    "shout-a": STYLE + "姿势改为：两只小短手举起来挥舞，身体开心地向后仰，嘴巴张到最大在傻叫，舌头伸出来，"
+    "眼睛睁得大大的、眼珠还是歪的，像在兴奋地喊口号。",
+    "shout-c": STYLE + "姿势改为：双拳举过头顶、双脚离地小跳一下，嘴巴张到最大傻叫，舌头伸出来，"
+    "眼睛亮晶晶地往上看着，一副开心到不行的样子。",
 }
 # Each frame is generated from a reference so the character survives the pose change.
 REFERENCES = {
