@@ -208,7 +208,7 @@ function silhouette (width, height, paint) {
   return { canvas, mask }
 }
 
-// ── the idle head ─────────────────────────────────────────────────────────────
+// ── the idle head (icon art: tool rows, running icon, step-process icon) ──────
 const HEAD = 48
 
 /**
@@ -272,6 +272,96 @@ function drawHead (closed) {
   if (!closed) canvas.halo(new Set([9, 10, 11]))
   canvas.halo(new Set([7]))
   canvas.ellipse(15, 10, 4.5, 2.5, C.highlight)
+  return canvas
+}
+
+// ── the waiting Ork (full body, standing at ease) ─────────────────────────────
+/**
+ * Draw the waiting mascot: the same Ork boy as the shout loop, standing at ease
+ * beside the composer bubble with his choppa resting on the ground, a bored lid
+ * over one red eye and his mouth shut.
+ *
+ * A side view was attempted first — four revisions of it — because the reference
+ * mascot is a whale lying on its side. It never read as a greenskin at 48px wide:
+ * folded limbs turned into a crocodile, then a duck bill. The front view keeps
+ * the likeness the shouting Ork already earned.
+ *
+ * @param closed - true for the blink frame (eyelid down, everything else equal).
+ */
+function drawIdle (closed) {
+  const { canvas, mask } = silhouette(BODY_W, BODY_H, (shapes) => {
+    shapes.ellipse(32, 17, 13, 11, C.skin) // skull
+    shapes.ellipse(32, 30, 15, 7.5, C.skin) // jutting jaw
+    shapes.polygon([[20, 12], [13, 5], [15, 15], [20, 15]], C.skin) // ears
+    shapes.polygon([[44, 12], [51, 5], [49, 15], [44, 15]], C.skin)
+    shapes.polygon([[28, 6], [30, 1], [33, 1], [35, 6]], C.skin) // bristles
+    shapes.polygon([[34, 6], [37, 2], [40, 3], [38, 7]], C.skin)
+    shapes.rect(27, 34, 37, 42, C.skin) // neck
+    shapes.ellipse(32, 43, 16, 7, C.skin) // shoulders
+    shapes.ellipse(32, 52, 17, 13, C.skin) // gut
+    shapes.rect(22, 60, 31, 72, C.skin) // legs
+    shapes.rect(33, 60, 42, 72, C.skin)
+    // Both arms hang: one at his side, one down the haft of the choppa.
+    shapes.polygon([[20, 42], [13, 46], [13, 58], [21, 58]], C.skin)
+    shapes.ellipse(14, 57, 5.5, 5, C.skin)
+    shapes.polygon([[44, 42], [51, 46], [52, 58], [44, 58]], C.skin)
+    shapes.ellipse(52, 57, 5.5, 5, C.skin)
+  })
+
+  canvas.shadeFrom(mask, { lightBias: 84 })
+  canvas.outlineFrom(mask)
+  canvas.rect(26, 36, 38, 40, C.deep) // neck shadow
+
+  // Gear, as in the shout loop.
+  canvas.rect(22, 60, 31, 72, C.leather)
+  canvas.rect(33, 60, 42, 72, C.leather)
+  canvas.rect(19, 70, 32, 78, C.metalDark)
+  canvas.rect(32, 70, 45, 78, C.metalDark)
+  canvas.rect(19, 77, 32, 79, C.metal)
+  canvas.rect(32, 77, 45, 79, C.metal)
+  canvas.rect(15, 54, 49, 58, C.leatherDark) // belt
+  canvas.rect(29, 55, 35, 58, C.metal)
+  canvas.polygon([[8, 39], [21, 37], [24, 48], [10, 51]], C.metal) // pauldron
+  canvas.polygon([[9, 47], [22, 44], [22, 48], [10, 50]], C.metalDark)
+  canvas.polygon([[10, 40], [12, 33], [15, 40]], C.metalDark)
+  canvas.polygon([[17, 38], [19, 32], [22, 38]], C.metalDark)
+
+  // The choppa, resting blade-down on the ground beside him.
+  canvas.rect(50, 30, 53, 78, C.leatherDark) // haft
+  canvas.polygon([[50, 62], [62, 64], [62, 78], [50, 78]], C.metal) // blade
+  canvas.polygon([[50, 70], [62, 71], [62, 78], [50, 78]], C.metalDark)
+  canvas.ellipse(51, 57, 5.5, 5, C.skin) // fist over the haft
+  canvas.set(53, 56, C.shade)
+
+  // Face: red eye under a bored lid (or shut), tusks and a shut mouth.
+  canvas.rect(21, 12, 43, 14, C.deep) // brow
+  canvas.ellipse(26, 19, 3.5, 2.6, C.eyeRed)
+  canvas.ellipse(38, 19, 3.5, 2.6, C.eyeRed)
+  if (closed) {
+    // Cover the whole eye, not just its top: a leftover red ring reads as makeup.
+    for (const x of [26, 38]) {
+      canvas.ellipse(x, 19, 4.5, 3.5, C.skin)
+      canvas.rect(x - 4, 19, x + 4, 19, C.outline)
+    }
+  } else {
+    canvas.ellipse(26, 19, 1.6, 1.6, C.eyeDark)
+    canvas.ellipse(38, 19, 1.6, 1.6, C.eyeDark)
+    canvas.set(25, 18, C.glint)
+    canvas.set(37, 18, C.glint)
+    canvas.rect(22, 16, 42, 17, C.skin) // bored lid over both eyes
+  }
+  canvas.ellipse(32, 25, 5, 2, C.mid) // nose
+  canvas.set(30, 25, C.deep)
+  canvas.set(34, 25, C.deep)
+  canvas.rect(24, 30, 40, 31, C.deep) // shut mouth
+  canvas.rect(25, 28, 26, 30, C.tusk) // teef poking over the lip
+  canvas.rect(37, 28, 38, 30, C.tusk)
+  canvas.rect(23, 27, 25, 34, C.tusk) // tusks at the mouth corners
+  canvas.rect(39, 27, 41, 34, C.tusk)
+  canvas.rect(23, 31, 25, 34, C.tuskShade)
+  canvas.rect(39, 31, 41, 34, C.tuskShade)
+  canvas.halo(new Set([9, 10, 11, 18, 19, 7]))
+  canvas.halo(new Set([14, 15, 16, 17]))
   return canvas
 }
 
@@ -487,7 +577,7 @@ mkdirSync(assets, { recursive: true })
 if (process.argv[2] === '--dump') {
   const kind = process.argv[3] ?? 'body'
   const frame = Number(process.argv[4] ?? 0)
-  const canvas = kind === 'head' ? drawHead(Boolean(frame)) : drawBody(frame)
+  const canvas = kind === 'head' ? drawHead(false) : kind === 'idle' ? drawIdle(frame === 1) : drawBody(frame)
   const chars = '0123456789abcdefghijklmnopqrstuvwxyz'
   const lines = []
   for (let y = 0; y < canvas.height; y += 1) {
@@ -504,16 +594,22 @@ if (process.argv[2] === '--dump') {
 
 // The shout loop ships as one vertical strip: a single URL in the stylesheet and
 // a three-step `background-position` animation, instead of three separate
-// background-image swaps.
+// background-image swaps. The waiting Ork is a two-frame strip for the same
+// reason (eyes open / eyes shut).
 const SHOUT_FRAMES = 3
 const strip = new Canvas(BODY_W, BODY_H * SHOUT_FRAMES)
 for (let frame = 0; frame < SHOUT_FRAMES; frame += 1) {
   strip.pixels.set(drawBody(frame).pixels, frame * BODY_W * BODY_H)
 }
+const IDLE_FRAMES = 2
+const idle = new Canvas(BODY_W, BODY_H * IDLE_FRAMES)
+for (let frame = 0; frame < IDLE_FRAMES; frame += 1) {
+  idle.pixels.set(drawIdle(frame === 1).pixels, frame * BODY_W * BODY_H)
+}
 
 const outputs = [
   [drawHead(false), 3, 'ork-open.png'],
-  [drawHead(true), 3, 'ork-closed.png'],
+  [idle, 2, 'ork-idle.png'],
   [strip, 2, 'ork-shout.png']
 ]
 

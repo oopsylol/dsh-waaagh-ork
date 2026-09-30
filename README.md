@@ -11,8 +11,7 @@ WAAAGH! —— 给 DSH 加一个绿皮兽人，把写代码变成兽人式咆哮
 ## 特性
 
 - 绿色皮肤：输入框变成**漫画对话泡泡**（粗墨线 + 硬投影 + 左侧一个小尾巴），主发送按钮是绿色 `Waaagh!` 药丸。
-- 绿皮头像：**浮在泡泡左外侧**（不是被塞在留白里）的 192×192 像素兽人，会呼吸、会眨眼的憨脸。
-- 干活时换人：回合一开始，头像换成**全身卡通兽人**——张手怒吼 / 双臂高举 / 举砍刀三帧循环，头顶顶着一个绿色漫画气泡一直在喊 `Waaagh!!!`（每次随机 a 的数量）。等待时还是那个大头。
+- 绿皮头像：**全身**像素兽人站在漫画泡泡左侧外（不是塞在留白里的一个头）——等待时扛着砍刀拄地站着、半眯着眼、每几秒眨一次；回合一开始就换成三帧循环的怒吼（张手 / 双拳高举 / 举砍刀），头顶绿色漫画气泡喊 `Waaagh!!!`。两种状态共用一个 122×156 的盒子，所以角色不会跳变。
 - 输出遮罩：助手的过程与正文替换成绿色 `Waaaaaaagh!!!`——完成的回合是静态文字，流式回合是逐字生长的动画；点消息看原文，`查看详情` 按钮全局切换。
 - 运行提示：`Deep diving...` / `深度求索中，用时 …` 变成绿色 `Waaaaaaagh!!!`，旁边那条鲸鱼尾巴换成会点头的绿皮头像（桌面版 0.2.0 的 `TextShimmer` 把标记从 `data-text-shimmer` 改成了 `data-shimmer`，所以按 `runningText` 类名兜底）。
 - 过程行：`正在读取文件` / `准备写入文件` 这类 step-process 行，图标变成绿皮头像、文字变成每行随机嚎叫（点 `查看详情` 恢复原文）。
@@ -75,19 +74,27 @@ dsh plugin --profile web add link:/path/to/dsh-waaagh-ork
 ```sh
 pnpm install          # 安装 esbuild / typescript 与 DSH 类型契约包
 pnpm run typecheck    # tsc --noEmit，对真实 .d.ts 检查插槽名、props、选择器字段
-pnpm run sprite       # scripts/sprite.mjs → src/assets/ork-open.png + ork-closed.png
+pnpm run sprite       # scripts/sprite.mjs → src/assets/{ork-idle,ork-shout,ork-open}.png
 pnpm run build        # src/ → lib/index.js（host）+ lib/client.js（浏览器半）
 pnpm run verify       # typecheck + sprite + build，并校验 lib/ 与 src/assets/ 没有漂移
 ```
 
-绿皮头像不是手绘图片，而是 `scripts/sprite.mjs` 在 48×48 像素网格上画出来的：剪影 → 按剪影侵蚀出的明暗环 → 轮廓墨线 → 五官（顺序很重要，先画五官再上明暗会把獠牙刷掉），然后整倍数放大成 144×144 的调色板 PNG（`tRNS` 索引 0 透明）。改个数字重跑 `pnpm run sprite` 就能换脸。PNG 用**无压缩 DEFLATE 块 + 自写 CRC/Adler** 编码，字节跨平台一致，所以 CI 能像校验 `lib/` 一样校验精灵图没有漂移。
+三张精灵图都不是手绘图片，而是 `scripts/sprite.mjs` 在像素网格上画出来的：剪影 → 按剪影侵蚀出的明暗环 → 轮廓墨线 → 装备与五官（顺序很重要，先画五官再上明暗会把獠牙刷掉），再整倍数放大成调色板 PNG（`tRNS` 索引 0 透明）。
+
+| 文件 | 网格 | 内容 |
+| --- | --- | --- |
+| `ork-idle.png` | 64×80 ×2 帧 | 等待态：全身站姿、扛刀拄地、眨眼帧 |
+| `ork-shout.png` | 64×80 ×3 帧 | 干活态：怒吼循环 |
+| `ork-open.png` | 48×48 | 16px 图标用的大头（工具行 / 运行行 / 过程行） |
+
+多帧动画都拼成**竖直雪碧图**，CSS 只放一个 URL，用 `background-position` 走几步切帧。`node scripts/sprite.mjs --dump idle 1` 会把任意一帧打成 ASCII 像素图（`.` 透明、其余是调色板索引）——本轮每个 bug 都是靠它定位的，肉眼很容易被渲染结果骗。PNG 用**无压缩 DEFLATE 块 + 自写 CRC/Adler** 编码，字节跨平台一致，所以 CI 能像校验 `lib/` 一样校验精灵图没有漂移。
 
 | 路径 | 作用 |
 | --- | --- |
 | `src/client/index.ts` | 浏览器半：插槽注册、绿皮头像、输入/输出遮罩、运行提示 |
 | `src/host/index.ts` | Node 半：有意的空实现，只为让 Loader 条目能激活 |
 | `src/assets/*.png` | 精灵图（由 `scripts/sprite.mjs` 生成），构建时内联成 data URL |
-| `scripts/sprite.mjs` | 像素画生成器：画脸 + 确定性 PNG 编码 |
+| `scripts/sprite.mjs` | 像素画生成器：画全身/大头 + 确定性 PNG 编码 + `--dump` 像素图 |
 | `scripts/build.mjs` | esbuild 构建：host 出 ESM，浏览器半出「懒 CJS 工厂注册」包 |
 | `lib/` | 构建产物，`lib/client.js` 由 `dsh-client-modules` 通过 `/plugins` 提供给页面 |
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.0 (2026-09-30)
+
+The waiting mascot is a head no longer: it is the whole Ork, standing at ease.
+
+- **Waiting:** the full-body Ork beside the composer bubble, choppa resting
+  blade-down on the ground, one hand at his side, a bored lid over both red eyes,
+  mouth shut with two teef over the lip. He blinks every few seconds.
+- **Working:** unchanged — the same Ork shouting, three frames, comic burst. Both
+  states now share one box (122x156, the 0.8 aspect of every 128x160 strip frame),
+  so the character does not change size or position when a turn starts.
+- The blink moved into the waiting strip: two frames and a two-step
+  `background-position` walk, replacing the old `::after` overlay. `ork-closed.png`
+  is gone; `ork-open.png` stays as the 16px icon art (tool rows, running icon,
+  step-process icon).
+- **A side view was tried first and abandoned** — four revisions of it — because
+  the reference mascot is a whale lying on its side. At 48px wide it never read as
+  a greenskin: lounging turned into a green crocodile, the pauldron into a grey
+  slab across the chest, the tusks into a duck bill. The front view keeps the
+  likeness the shouting Ork already earned, and the "two of us talking" framing
+  comes from the mascot standing next to the bubble. If the side view is wanted
+  badly enough to spend more rounds on, `scripts/sprite.mjs --dump idle`
+  (ASCII pixel map) is the tool that found every bug in this round.
+- `scripts/sprite.mjs` now emits two strips (`ork-idle.png` two frames,
+  `ork-shout.png` three) plus the icon head.
+
 ## 0.3.2 (2026-09-30)
 
 The working-state Ork was a green blob with a tiny head — not recognisably an

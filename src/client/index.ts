@@ -49,7 +49,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-general/client'
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
-import orkClosed from '../assets/ork-closed.png'
+import orkIdle from '../assets/ork-idle.png'
 import orkOpen from '../assets/ork-open.png'
 import orkShout from '../assets/ork-shout.png'
 
@@ -103,30 +103,34 @@ function subscribeCustom(listener: (value: string | null) => void): () => void {
 }
 
 // ── geometry ──────────────────────────────────────────────────────────────
-/** Idle head box: the mascot floats over the composer card's left edge. */
-const HEAD_SIZE = 122
+/**
+ * Mascot box. Every strip frame — the waiting pair and the shout triple — is
+ * 128x160, so the box has to keep that 0.8 aspect or `background-size` squashes
+ * the Ork. Waiting and working share it: standing at ease, then shouting.
+ */
+const ORK_W = 122
+const ORK_H = Math.round((ORK_W * 160) / 128)
 /** How far the mascot hangs outside the card, which sets the card's gutter. */
 const FLOAT_OUT = 52
-/**
- * Full-body box. The shout strip is three 128x160 frames, so the box has to keep
- * that 0.8 aspect or `background-size:100% 300%` squashes the Ork.
- */
-const BODY_W = HEAD_SIZE
-const BODY_H = Math.round((HEAD_SIZE * 160) / 128)
 
 const CSS = [
   /*
    * The mascot floats over the left edge of the composer card — nothing is
    * clipped or boxed in, it simply hangs outside the bubble. The card keeps a
-   * gutter so the draft never runs under the head. Centring uses the box offset
-   * (not `transform`) so every animation below owns `transform` outright.
+   * gutter so the draft never runs under him. Centring uses the box offset (not
+   * `transform`) so every animation below owns `transform` outright.
    */
-  `html[data-waaagh-orc] [data-composer-card]{padding-left:${HEAD_SIZE - FLOAT_OUT + 10}px!important}`,
-  `.waaagh-orc{position:absolute;left:-${FLOAT_OUT}px;top:calc(50% - ${HEAD_SIZE / 2}px);width:${HEAD_SIZE}px;height:${HEAD_SIZE}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
-  /* Idle: the head, with the blink overlay riding the same box. */
-  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkOpen}"));background-size:contain;background-position:center;background-repeat:no-repeat}`,
-  `.waaagh-orc::after{content:"";position:absolute;inset:0;background-image:url("${orkClosed}");background-size:contain;background-position:center;background-repeat:no-repeat;animation:waaagh-blink 3.6s infinite}`,
-  '@keyframes waaagh-blink{0%,92%,100%{opacity:0}95%,97%{opacity:1}}',
+  `html[data-waaagh-orc] [data-composer-card]{padding-left:${ORK_W - FLOAT_OUT + 10}px!important}`,
+  `.waaagh-orc{position:absolute;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  /*
+   * Waiting: the full body standing at ease, blinking every few seconds. The two
+   * frames ship as one strip and the blink is a two-step `background-position`
+   * walk, so a head-only mascot never comes back.
+   */
+  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkIdle}"));background-size:100% 200%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-blink 4.6s step-end infinite}`,
+  /* A custom avatar is one still image: no strip, so no blink walk. */
+  '.waaagh-custom::before{background-size:contain!important;background-position:center!important;animation:none!important}',
+  '@keyframes waaagh-blink{0%,92%{background-position:0 0}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
      the owner renders `[data-composer-placeholder]` only while the draft is
      empty, which is the one draft signal available without touching the editor. */
@@ -136,13 +140,13 @@ const CSS = [
   /* And it barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working: the head gives way to the full-body Ork, which keeps shouting. The
-   * three frames ship as one vertical strip and the flip is a three-step
-   * `background-position` walk, so the stylesheet holds a single URL.
+   * Working: the Ork at ease gives way to the Ork shouting. The three frames ship
+   * as one vertical strip and the flip is a three-step `background-position`
+   * walk, so the stylesheet holds a single URL.
    */
-  `.waaagh-body{position:absolute;left:0;top:${HEAD_SIZE - BODY_H}px;width:${BODY_W}px;height:${BODY_H}px;display:none;background-image:url("${orkShout}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
+  `.waaagh-body{position:absolute;inset:0;display:none;background-image:url("${orkShout}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
   'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip .54s step-end infinite}',
-  'html[data-waaagh-running=on] .waaagh-orc::before,html[data-waaagh-running=on] .waaagh-orc::after{display:none}',
+  'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
   '@keyframes waaagh-shout-flip{0%{background-position:0 0}33.33%{background-position:0 50%}66.66%{background-position:0 100%}}',
   /* …with a comic "WAAAGH!" burst above its head. Kept short (the burst is a
      label, not a sentence) and clear of the draft's first line. */
@@ -151,7 +155,6 @@ const CSS = [
   'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop .9s ease-in-out infinite}',
   '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-8deg) scale(.9)}45%{transform:rotate(-4deg) scale(1.08)}}',
   '.waaagh-toggle{flex:none;height:28px;color:' + GREEN + ';cursor:pointer;background:0 0;border:1px solid ' + GREEN + ';border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;transition:transform .12s ease,background .12s ease}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}.waaagh-toggle:active{transform:scale(.94)}',
-  '.waaagh-custom::after{display:none}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
   '.waaagh-settings-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
   '.waaagh-settings-input{flex:1;min-width:220px;height:30px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:0 8px;font-size:13px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
@@ -241,7 +244,7 @@ const CSS = [
   '@keyframes waaagh-shout{from{transform:translateY(0) rotate(-1.4deg)}to{transform:translateY(-2px) rotate(1.4deg)}}',
   '@keyframes waaagh-dakka{0%{transform:scale(.55) rotate(-16deg);filter:brightness(2.4)}55%{transform:scale(1.2) rotate(9deg)}100%{transform:scale(1) rotate(0);filter:none}}',
   /* one switch turns the whole menagerie off */
-  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::after,html[data-waaagh-running=on] .waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-body,html[data-waaagh-running=on] .waaagh-burst,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}.waaagh-orc::after{opacity:0}}'
+  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::before,html[data-waaagh-running=on] .waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-body,html[data-waaagh-running=on] .waaagh-burst,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
 ].join('\n')
 
 const TAG_ID = 'dsh-waaagh-ork/styles'
