@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.1 (2026-09-30)
+
+The swimmer from 0.9.0 was invisible, and the sizing was anchored to the wrong box.
+Both came out of measuring against the real DOM instead of the web CLI.
+
+- **The leftover `display:none`.** 0.8.0 hid the whole composer mascot while a turn
+  ran (the working Ork lived in the transcript then). 0.9.0 moved him back to the
+  composer but left the rule in place, so the swim animation played on a hidden
+  element — measured 0x0 during a turn. Removed.
+- **The anchor is now the real one.** `left`/`top` on an absolutely positioned
+  element are relative to its `offsetParent`, and on the desktop that is the
+  composer's left seat, not the card. 0.8.0's offsets were derived from the web
+  CLI's layout (where the seat does sit at the card's left edge), which parked the
+  mascot inside the bubble on the desktop. `fitMascot` now takes the card's box
+  *minus the measured offsetParent's* for both axes, so it works wherever the seat
+  sits.
+- **The lap is a swim, not a twitch.** He is capped by the card's height (a 147px
+  Ork beside a 102px bubble looks wrong and left a 5px lap), and the range runs
+  from above the card's top edge to below its bottom edge: measured travel went
+  from 5px to ~114px, still clear of the card (3px of overlap from the rotation).
+- He keeps his place while drowning now — sinking below the composer would just
+  leave the window, so going under is the strip plus a fade and a tilt.
+- Verified live: offsetParent is the card, clears it by 1px when waiting, swim state
+  walks idle → fast → slow → drown → fast, no console errors.
+
 ## 0.9.0 (2026-09-30)
 
 The working state is a swimmer. The brief: an Ork paddling laps along the chat

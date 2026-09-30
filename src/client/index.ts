@@ -148,9 +148,6 @@ const CSS = [
    */
   'html[data-waaagh-orc] [data-composer-card]{padding-left:18px!important}',
   `.waaagh-orc{position:absolute;z-index:40;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
-  /* Working: the composer keeps its corner to the draft. The Ork is in the
-     transcript instead, following the model's status line. */
-  'html[data-waaagh-running=on] .waaagh-orc{display:none}',
   /*
    * Waiting: two idle sets, each a two-frame strip (eyes open, eyes shut). The set
    * is picked on load and rotated on a timer — one fixed pose forever is what the
@@ -186,8 +183,10 @@ const CSS = [
   'html[data-waaagh-swim=drown] .waaagh-orc{animation:waaagh-sink 6s ease-in-out 1 forwards}',
   '@keyframes waaagh-swim-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
   '@keyframes waaagh-drown-frames{0%{background-position:0 0}25%{background-position:0 33.33%}50%{background-position:0 66.66%}75%{background-position:0 100%}}',
-  '@keyframes waaagh-lap{0%,100%{top:-6%;transform:rotate(-5deg)}50%{top:calc(100% - var(--waaagh-h,95px) + 4%);transform:rotate(5deg)}}',
-  '@keyframes waaagh-sink{0%{top:8%;opacity:1;transform:rotate(0)}50%{top:calc(100% + var(--waaagh-h,95px) * .4);opacity:.3;transform:rotate(75deg)}70%{top:calc(100% + var(--waaagh-h,95px) * .4);opacity:.3;transform:rotate(75deg)}100%{top:6%;opacity:1;transform:rotate(0)}}',
+  '@keyframes waaagh-lap{0%,100%{top:var(--waaagh-from,10%);transform:rotate(-5deg)}50%{top:var(--waaagh-to,80%);transform:rotate(5deg)}}',
+  /* He keeps his place while drowning: going under is the strip and the fade, and
+     sinking below the composer would just leave the window. */
+  '@keyframes waaagh-sink{0%{opacity:1;transform:rotate(0)}30%{opacity:.45;transform:rotate(26deg) translateY(12px)}70%{opacity:.45;transform:rotate(26deg) translateY(12px)}100%{opacity:1;transform:rotate(0)}}',
   /*
    * The turn finishing is worth a WAAAGH: the shout sets play for a couple of
    * seconds when the reply lands, then the waiting pose comes back.
@@ -364,29 +363,44 @@ function pickOtherSet(sets: readonly string[], current: string | undefined): str
   return pickSet(others.length > 0 ? others : sets)
 }
 /**
- * Fit the waiting mascot into the margin left of the composer card.
+ * Fit the waiting mascot into the margin left of the composer card, and measure
+ * the lap he swims around it.
  *
- * CSS alone cannot do this: how much room there is depends on the chat column's
- * width and padding, which only the live layout knows. Measured off the card's own
- * box, so the mascot is never wider than the space it stands in (and never slides
- * under the sidebar, which is what a fixed 122px mascot did on the desktop).
+ * Width comes from the room the chat column leaves beside the card. The offsets
+ * cannot: `left`/`top` on an absolutely positioned element are relative to its
+ * `offsetParent`, and on the desktop that is the composer's left seat — not the
+ * card, and not the column. The first cut hard-coded the offset from the web CLI's
+ * layout (where the seat does sit at the card's left edge) and the mascot ended up
+ * parked inside the bubble. So both are derived from the card's own box minus the
+ * offsetParent's.
  * @param orc - the mascot element, or null when it is not mounted.
  */
 function fitMascot(orc: HTMLElement | null): void {
   if (orc === null || typeof document === 'undefined') return
   const card = orc.closest('[data-composer-card]') ?? document.querySelector('[data-composer-card]')
-  const column = card?.parentElement ?? null
-  if (card === null || column === null) return
-  const available = card.getBoundingClientRect().left - column.getBoundingClientRect().left
-  // Floor of 76px: the desktop leaves ~68px of margin, and a mascot shrunk to fit
-  // that exactly reads as a thumbnail. `z-index` covers the few pixels that spill.
-  const width = Math.round(Math.max(76, Math.min(ORK_W, available - 6)))
+  if (card === null) return
+  const column = card.parentElement
+  const cardBox = card.getBoundingClientRect()
+  const columnLeft = column?.getBoundingClientRect().left ?? cardBox.left
+  // Width is limited three ways: the mascot's own art, the margin the column
+  // leaves beside the card, and the card's own height — a 147px Ork beside a 102px
+  // bubble looks wrong and leaves no room for a lap. Floor of 76px keeps him from
+  // becoming a thumbnail on a narrow window.
+  const byHeight = Math.round((cardBox.height * 1.2 * ORK_W) / ORK_H)
+  const width = Math.round(Math.max(76, Math.min(ORK_W, cardBox.left - columnLeft - 6, byHeight)))
   const height = Math.round((width * ORK_H) / ORK_W)
+  const parent = (orc.offsetParent as HTMLElement | null) ?? column
+  const parentBox = parent?.getBoundingClientRect() ?? { left: 0, top: 0 }
+  const left = Math.round(cardBox.left - width - 4 - parentBox.left)
+  const top = Math.round(cardBox.top + cardBox.height / 2 - height / 2 - parentBox.top)
   orc.style.width = `${width}px`
   orc.style.height = `${height}px`
-  orc.style.left = `-${width + 2}px`
-  orc.style.top = `calc(50% - ${Math.round(height / 2)}px)`
-  // The swim laps are expressed against his own box, so hand it to the keyframes.
+  orc.style.left = `${left}px`
+  orc.style.top = `${top}px`
+  // The lap runs from above the card's top edge to below its bottom edge, so the
+  // travel is a real swim rather than the few pixels a card-height span allows.
+  orc.style.setProperty('--waaagh-from', `${Math.round(cardBox.top - parentBox.top - height * 0.55)}px`)
+  orc.style.setProperty('--waaagh-to', `${Math.round(cardBox.top + cardBox.height - parentBox.top - height * 0.45)}px`)
   orc.style.setProperty('--waaagh-w', `${width}px`)
   orc.style.setProperty('--waaagh-h', `${height}px`)
 }
