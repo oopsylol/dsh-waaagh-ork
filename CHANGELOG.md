@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.5.0 (2026-09-30)
+
+The mascot is generated art now. Hand-drawn pixel art kept losing the likeness at
+mascot size, so the Ork comes from an image model instead — and the character
+survives the pose changes.
+
+- **Which service.** No domestic image *skill* on this machine is reachable:
+  小云雀 (`xyq-nest-skill`) needs `XYQ_ACCESS_KEY`, SpriteCook needs its own MCP
+  server plus credits. The user environment already holds **Volcano Ark**
+  credentials (`ARK_API_KEY` + `ARK_BASE_URL` + `VOLC_IMAGE_MODEL`, i.e.
+  `doubao-seedream-4-0-250828`), so the plugin talks to that directly through
+  `scripts/mascot.py`.
+- **Five frames, one character.** The charging scream is generated first; every
+  other frame is generated *from it* as a reference image, with the design spelled
+  out again in the prompt (green skin, red eyes, spiked pauldron, belt, metal
+  boots, thick black outlines). Poses: standing at ease with the choppa planted
+  (plus a blink frame) and the three shout frames — arms flung back, fist thrown
+  forward, both fists overhead.
+- **Background keyed by hue.** Frames are drawn on a flat magenta backdrop; a
+  distance key leaves the model's drop shadow as a pink smear, so `mascot.py` keys
+  on the magenta hue band, feathers the edge, crops to the character, fits one
+  128×160 frame and quantises to 64 colours. 1024×1024 in, 128×160 out — the size
+  the plugin actually shows, which also keeps the bundle smaller than before.
+- **Repo layout.** `scripts/sprite.mjs` now draws only the 16px icon head; the two
+  mascot strips come from `scripts/mascot.py` (`--raw <dir>` rebuilds them from
+  saved frames without spending API tokens). `scripts/check-assets.mjs` asserts the
+  geometry contract (128×160 per frame) and CI checks drift for `lib/` and the
+  drawn head only, since the strips need a key to regenerate.
+- Generated 5 images, 4096 output tokens each, on the user's own Ark account.
+
 ## 0.4.1 (2026-09-30)
 
 The working state did not go WAAAGH. It was a symmetric standing figure with his

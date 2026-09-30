@@ -1,6 +1,6 @@
 {
   "name": "dsh-waaagh-ork",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web and DSH Desktop: green Ork skin + blinking mascot, the model's thinking and output masked as green \"Waaaaaaagh!!!\" (click to reveal the original), and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator. Never touches the composer draft: what you type is what gets sent.",
   "license": "MIT",
   "type": "module",
@@ -26,10 +26,11 @@
   ],
   "scripts": {
     "sprite": "node scripts/sprite.mjs",
+    "check-assets": "node scripts/check-assets.mjs",
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run typecheck && npm run sprite && npm run build && git diff --exit-code -- lib src/assets",
-    "prepublishOnly": "npm run typecheck && npm run sprite && npm run build"
+    "verify": "npm run typecheck && npm run sprite && npm run check-assets && npm run build && git diff --exit-code -- lib src/assets/ork-open.png",
+    "prepublishOnly": "npm run typecheck && npm run sprite && npm run check-assets && npm run build"
   },
   "repository": {
     "type": "git",

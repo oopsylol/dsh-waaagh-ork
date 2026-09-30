@@ -74,27 +74,38 @@ dsh plugin --profile web add link:/path/to/dsh-waaagh-ork
 ```sh
 pnpm install          # 安装 esbuild / typescript 与 DSH 类型契约包
 pnpm run typecheck    # tsc --noEmit，对真实 .d.ts 检查插槽名、props、选择器字段
-pnpm run sprite       # scripts/sprite.mjs → src/assets/{ork-idle,ork-shout,ork-open}.png
+pnpm run sprite       # scripts/sprite.mjs → src/assets/ork-open.png（图标用的大头）
+pnpm run check-assets # 校验三张精灵图的尺寸/帧数契约（128×160 × 帧）
 pnpm run build        # src/ → lib/index.js（host）+ lib/client.js（浏览器半）
-pnpm run verify       # typecheck + sprite + build，并校验 lib/ 与 src/assets/ 没有漂移
+pnpm run verify       # typecheck + sprite + check-assets + build，并校验 lib/ 与 ork-open.png 没有漂移
 ```
 
-三张精灵图都不是手绘图片，而是 `scripts/sprite.mjs` 在像素网格上画出来的：剪影 → 按剪影侵蚀出的明暗环 → 轮廓墨线 → 装备与五官（顺序很重要，先画五官再上明暗会把獠牙刷掉），再整倍数放大成调色板 PNG（`tRNS` 索引 0 透明）。
+**吉祥物是 AI 生成的**（`scripts/mascot.py`）：本机没有可用的国内生图 skill（小云雀要 `XYQ_ACCESS_KEY`，SpriteCook 要它自己的 MCP 服务端），但用户环境里已经有**火山方舟**凭据，于是走 `doubao-seedream-4-0` 的 `images/generations`：
 
-| 文件 | 网格 | 内容 |
-| --- | --- | --- |
-| `ork-idle.png` | 64×80 ×2 帧 | 等待态：全身站姿、扛刀拄地、眨眼帧 |
-| `ork-shout.png` | 64×80 ×3 帧 | 干活态：怒吼循环 |
-| `ork-open.png` | 48×48 | 16px 图标用的大头（工具行 / 运行行 / 过程行） |
+```sh
+# ARK_API_KEY / ARK_BASE_URL / VOLC_IMAGE_MODEL 从环境读取；密钥不会被打印
+python scripts/mascot.py              # 生成 5 帧 → 组装两条雪碧图
+python scripts/mascot.py --raw <dir>  # 用已保存的原图重建，不再消耗额度（CI 走这条）
+```
 
-多帧动画都拼成**竖直雪碧图**，CSS 只放一个 URL，用 `background-position` 走几步切帧。`node scripts/sprite.mjs --dump idle 1` 会把任意一帧打成 ASCII 像素图（`.` 透明、其余是调色板索引）——本轮每个 bug 都是靠它定位的，肉眼很容易被渲染结果骗。PNG 用**无压缩 DEFLATE 块 + 自写 CRC/Adler** 编码，字节跨平台一致，所以 CI 能像校验 `lib/` 一样校验精灵图没有漂移。
+角色一致性靠**参考图链**：第一帧冲锋咆哮作为后续每一帧的 `image` 输入，提示词里再强调一遍设计（绿皮、红眼、尖刺护肩、腰带、金属靴、粗黑描边）。原图统一画在**纯品红背景**上，`mascot.py` 按**色相**抠掉背景和靴子投影（只按颜色距离抠会把投影留成粉色污渍），再裁到角色外接框、等比塞进 128×160、量化到 64 色。
+
+| 文件 | 尺寸 | 内容 | 来源 |
+| --- | --- | --- | --- |
+| `ork-idle.png` | 128×160 ×2 帧 | 等待态：扛刀拄地站着，第二帧闭眼 | `scripts/mascot.py`（AI 生成） |
+| `ork-shout.png` | 128×160 ×3 帧 | 干活态：后仰甩臂 / 冲锋挥拳 / 双拳过顶 | 同上 |
+| `ork-open.png` | 144×144 | 16px 图标用的大头（工具行 / 运行行 / 过程行） | `scripts/sprite.mjs`（手绘） |
+
+多帧动画都拼成**竖直雪碧图**，CSS 只放一个 URL，用 `background-position` 走几步切帧。手绘那张 `node scripts/sprite.mjs --dump` 会打成 ASCII 像素图（`.` 透明、其余是调色板索引）——之前那几轮手绘的 bug 都是靠它定位的。手绘 PNG 用**无压缩 DEFLATE 块 + 自写 CRC/Adler** 编码，字节跨平台一致，所以 CI 能像校验 `lib/` 一样校验它没有漂移；AI 生成的两条雪碧图需要 API 额度，CI 改为校验尺寸契约。
 
 | 路径 | 作用 |
 | --- | --- |
 | `src/client/index.ts` | 浏览器半：插槽注册、绿皮头像、输入/输出遮罩、运行提示 |
 | `src/host/index.ts` | Node 半：有意的空实现，只为让 Loader 条目能激活 |
-| `src/assets/*.png` | 精灵图（由 `scripts/sprite.mjs` 生成），构建时内联成 data URL |
-| `scripts/sprite.mjs` | 像素画生成器：画全身/大头 + 确定性 PNG 编码 + `--dump` 像素图 |
+| `src/assets/*.png` | 精灵图（手绘图标 + AI 生成的吉祥物），构建时内联成 data URL |
+| `scripts/sprite.mjs` | 手绘图标头：像素画 + 确定性 PNG 编码 + `--dump` 像素图 |
+| `scripts/mascot.py` | AI 生成吉祥物：调火山方舟 doubao-seedream、抠品红背景、拼雪碧图 |
+| `scripts/check-assets.mjs` | 校验三张图的尺寸/帧数契约 |
 | `scripts/build.mjs` | esbuild 构建：host 出 ESM，浏览器半出「懒 CJS 工厂注册」包 |
 | `lib/` | 构建产物，`lib/client.js` 由 `dsh-client-modules` 通过 `/plugins` 提供给页面 |
 

@@ -275,206 +275,6 @@ function drawHead (closed) {
   return canvas
 }
 
-// ── the waiting Ork (full body, standing at ease) ─────────────────────────────
-/**
- * Draw the waiting mascot: the same Ork boy as the shout loop, standing at ease
- * beside the composer bubble with his choppa resting on the ground, a bored lid
- * over one red eye and his mouth shut.
- *
- * A side view was attempted first — four revisions of it — because the reference
- * mascot is a whale lying on its side. It never read as a greenskin at 48px wide:
- * folded limbs turned into a crocodile, then a duck bill. The front view keeps
- * the likeness the shouting Ork already earned.
- *
- * @param closed - true for the blink frame (eyelid down, everything else equal).
- */
-function drawIdle (closed) {
-  const { canvas, mask } = silhouette(BODY_W, BODY_H, (shapes) => {
-    shapes.ellipse(32, 17, 13, 11, C.skin) // skull
-    shapes.ellipse(32, 30, 15, 7.5, C.skin) // jutting jaw
-    shapes.polygon([[20, 12], [13, 5], [15, 15], [20, 15]], C.skin) // ears
-    shapes.polygon([[44, 12], [51, 5], [49, 15], [44, 15]], C.skin)
-    shapes.polygon([[28, 6], [30, 1], [33, 1], [35, 6]], C.skin) // bristles
-    shapes.polygon([[34, 6], [37, 2], [40, 3], [38, 7]], C.skin)
-    shapes.rect(27, 34, 37, 42, C.skin) // neck
-    shapes.ellipse(32, 43, 16, 7, C.skin) // shoulders
-    shapes.ellipse(32, 52, 17, 13, C.skin) // gut
-    shapes.rect(22, 60, 31, 72, C.skin) // legs
-    shapes.rect(33, 60, 42, 72, C.skin)
-    // Both arms hang: one at his side, one down the haft of the choppa.
-    shapes.polygon([[20, 42], [13, 46], [13, 58], [21, 58]], C.skin)
-    shapes.ellipse(14, 57, 5.5, 5, C.skin)
-    shapes.polygon([[44, 42], [51, 46], [52, 58], [44, 58]], C.skin)
-    shapes.ellipse(52, 57, 5.5, 5, C.skin)
-  })
-
-  canvas.shadeFrom(mask, { lightBias: 84 })
-  canvas.outlineFrom(mask)
-  canvas.rect(26, 36, 38, 40, C.deep) // neck shadow
-
-  // Gear, as in the shout loop.
-  canvas.rect(22, 60, 31, 72, C.leather)
-  canvas.rect(33, 60, 42, 72, C.leather)
-  canvas.rect(19, 70, 32, 78, C.metalDark)
-  canvas.rect(32, 70, 45, 78, C.metalDark)
-  canvas.rect(19, 77, 32, 79, C.metal)
-  canvas.rect(32, 77, 45, 79, C.metal)
-  canvas.rect(15, 54, 49, 58, C.leatherDark) // belt
-  canvas.rect(29, 55, 35, 58, C.metal)
-  canvas.polygon([[8, 39], [21, 37], [24, 48], [10, 51]], C.metal) // pauldron
-  canvas.polygon([[9, 47], [22, 44], [22, 48], [10, 50]], C.metalDark)
-  canvas.polygon([[10, 40], [12, 33], [15, 40]], C.metalDark)
-  canvas.polygon([[17, 38], [19, 32], [22, 38]], C.metalDark)
-
-  // The choppa, resting blade-down on the ground beside him.
-  canvas.rect(50, 30, 53, 78, C.leatherDark) // haft
-  canvas.polygon([[50, 62], [62, 64], [62, 78], [50, 78]], C.metal) // blade
-  canvas.polygon([[50, 70], [62, 71], [62, 78], [50, 78]], C.metalDark)
-  canvas.ellipse(51, 57, 5.5, 5, C.skin) // fist over the haft
-  canvas.set(53, 56, C.shade)
-
-  // Face: red eye under a bored lid (or shut), tusks and a shut mouth.
-  canvas.rect(21, 12, 43, 14, C.deep) // brow
-  canvas.ellipse(26, 19, 3.5, 2.6, C.eyeRed)
-  canvas.ellipse(38, 19, 3.5, 2.6, C.eyeRed)
-  if (closed) {
-    // Cover the whole eye, not just its top: a leftover red ring reads as makeup.
-    for (const x of [26, 38]) {
-      canvas.ellipse(x, 19, 4.5, 3.5, C.skin)
-      canvas.rect(x - 4, 19, x + 4, 19, C.outline)
-    }
-  } else {
-    canvas.ellipse(26, 19, 1.6, 1.6, C.eyeDark)
-    canvas.ellipse(38, 19, 1.6, 1.6, C.eyeDark)
-    canvas.set(25, 18, C.glint)
-    canvas.set(37, 18, C.glint)
-    canvas.rect(22, 16, 42, 17, C.skin) // bored lid over both eyes
-  }
-  canvas.ellipse(32, 25, 5, 2, C.mid) // nose
-  canvas.set(30, 25, C.deep)
-  canvas.set(34, 25, C.deep)
-  canvas.rect(24, 30, 40, 31, C.deep) // shut mouth
-  canvas.rect(25, 28, 26, 30, C.tusk) // teef poking over the lip
-  canvas.rect(37, 28, 38, 30, C.tusk)
-  canvas.rect(23, 27, 25, 34, C.tusk) // tusks at the mouth corners
-  canvas.rect(39, 27, 41, 34, C.tusk)
-  canvas.rect(23, 31, 25, 34, C.tuskShade)
-  canvas.rect(39, 31, 41, 34, C.tuskShade)
-  canvas.halo(new Set([9, 10, 11, 18, 19, 7]))
-  canvas.halo(new Set([14, 15, 16, 17]))
-  return canvas
-}
-
-// ── the full-body Ork (shouting loop) ─────────────────────────────────────────
-const BODY_W = 64
-const BODY_H = 80
-
-/**
- * Draw one shout frame of the full-body Ork.
- *
- * A WAAAGH is a charge and a scream, not a pose: the maw takes up most of the
- * face, the stance lunges (near boot planted forward, far leg trailing), the arms
- * are flung wide, and comic shout lines radiate from the jaw. An earlier version
- * had him standing symmetrically with his mouth nearly shut — technically a
- * "shouting" sprite, but nothing about it went WAAAGH.
- *
- * @param frame - 0: scream, arms back · 1: charge, fist thrown forward · 2: peak, both fists overhead.
- */
-function drawBody (frame) {
-  const { canvas, mask } = silhouette(BODY_W, BODY_H, (shapes) => {
-    // Head: big, with a jaw wider than the skull and a huge open maw between them.
-    shapes.ellipse(32, 16, 15, 13, C.skin) // skull
-    shapes.ellipse(32, 28, 16, 8, C.skin) // jutting jaw
-    shapes.polygon([[19, 10], [13, 4], [14, 15], [20, 15]], C.skin) // left ear, small: wider reads as a wing
-    shapes.polygon([[45, 10], [51, 4], [50, 15], [44, 15]], C.skin) // right ear
-    shapes.polygon([[27, 4], [29, -1], [33, -1], [35, 4]], C.skin) // bristles
-    shapes.polygon([[34, 4], [38, -1], [42, 1], [39, 5]], C.skin)
-    shapes.rect(26, 33, 38, 41, C.skin) // neck
-    shapes.ellipse(32, 42, 16, 7, C.skin) // shoulders
-    shapes.ellipse(32, 52, 17, 13, C.skin) // gut
-    // Lunge: near leg planted forward and low, far leg trailing behind.
-    shapes.rect(31, 60, 42, 75, C.skin)
-    shapes.rect(19, 60, 29, 70, C.skin)
-    if (frame === 0) {
-      // Scream: both arms flung back and out, chest open.
-      shapes.polygon([[18, 41], [4, 34], [5, 44], [19, 50]], C.skin)
-      shapes.polygon([[46, 41], [60, 34], [59, 44], [45, 50]], C.skin)
-      shapes.ellipse(5, 39, 6, 6, C.skin)
-      shapes.ellipse(59, 39, 6, 6, C.skin)
-    } else if (frame === 1) {
-      // Charge: near fist thrown forward, far arm dragged behind.
-      shapes.polygon([[18, 41], [5, 30], [11, 24], [21, 37]], C.skin)
-      shapes.polygon([[46, 41], [59, 48], [57, 58], [45, 52]], C.skin)
-      shapes.ellipse(7, 27, 6.5, 6.5, C.skin)
-      shapes.ellipse(59, 53, 6, 6, C.skin)
-    } else {
-      // Peak: both fists overhead, body arched back.
-      shapes.polygon([[18, 41], [7, 25], [14, 19], [24, 35]], C.skin)
-      shapes.polygon([[46, 41], [57, 25], [50, 19], [40, 35]], C.skin)
-      shapes.ellipse(10, 21, 6.5, 6.5, C.skin)
-      shapes.ellipse(54, 21, 6.5, 6.5, C.skin)
-    }
-  })
-
-  canvas.shadeFrom(mask, { lightBias: 84 })
-  canvas.outlineFrom(mask)
-  canvas.rect(26, 35, 38, 39, C.deep) // neck shadow
-
-  // Gear.
-  canvas.rect(31, 60, 42, 74, C.leather) // trousers
-  canvas.rect(19, 60, 29, 69, C.leather)
-  canvas.rect(29, 71, 45, 79, C.metalDark) // near boot, planted forward
-  canvas.rect(16, 67, 30, 74, C.metalDark)
-  canvas.rect(29, 78, 45, 80, C.metal)
-  canvas.rect(16, 73, 30, 75, C.metal)
-  canvas.rect(14, 54, 50, 58, C.leatherDark) // belt
-  canvas.rect(29, 55, 35, 58, C.metal)
-  canvas.polygon([[8, 39], [21, 37], [24, 49], [10, 52]], C.metal) // pauldron
-  canvas.polygon([[9, 48], [22, 45], [22, 49], [10, 51]], C.metalDark)
-  canvas.polygon([[10, 40], [12, 33], [15, 40]], C.metalDark)
-  canvas.polygon([[17, 38], [19, 32], [22, 38]], C.metalDark)
-
-  if (frame === 2) {
-    // Choppa swung overhead.
-    canvas.polygon([[50, 20], [62, -2], [63, 20]], C.metal)
-    canvas.polygon([[50, 20], [58, 0], [62, -2], [63, 20]], C.metalDark)
-    canvas.rect(52, 18, 55, 26, C.leatherDark)
-  }
-
-  /* The maw is the point: a big dark hole across most of the jaw, four teef
-     hanging from the top, tusks at both corners, tongue at the bottom. */
-  canvas.ellipse(32, 27, 11, 7.5, C.deep)
-  canvas.ellipse(32, 31, 8, 3.5, C.tongue)
-  canvas.ellipse(32, 32.5, 6, 2, C.tongueShade)
-  for (const x of [24, 28, 32, 36]) canvas.rect(x, 21, x + 1, 24, C.tusk)
-  canvas.rect(21, 20, 23, 32, C.tusk) // left tusk
-  canvas.rect(41, 20, 43, 32, C.tusk)
-  canvas.rect(21, 27, 23, 32, C.tuskShade)
-  canvas.rect(41, 27, 43, 32, C.tuskShade)
-
-  // Eyes: narrow red slits under two separate brows angled down at the nose — a
-  // single full-width band instead reads as goggles, not rage.
-  canvas.polygon([[20, 10], [29, 14], [20, 16]], C.deep)
-  canvas.polygon([[44, 10], [35, 14], [44, 16]], C.deep)
-  canvas.ellipse(26, 17, 3.8, 1.8, C.eyeRed)
-  canvas.ellipse(38, 17, 3.8, 1.8, C.eyeRed)
-  canvas.ellipse(26, 17, 1.4, 1.4, C.eyeDark)
-  canvas.ellipse(38, 17, 1.4, 1.4, C.eyeDark)
-  canvas.set(25, 16, C.glint)
-  canvas.set(37, 16, C.glint)
-  // Nose flared over the maw.
-  canvas.ellipse(32, 20, 4, 1.5, C.mid)
-  canvas.halo(new Set([9, 10, 11, 18, 19, 7]))
-  canvas.halo(new Set([14, 15, 16, 17]))
-
-  /* Shout lines. They have to touch the jaw: floating dashes read as litter. */
-  for (const y of [23, 28, 33]) {
-    canvas.rect(8, y, 17, y, C.outline)
-    canvas.rect(47, y, 56, y, C.outline)
-  }
-  return canvas
-}
-
 // ── PNG writer (deterministic: stored DEFLATE blocks, no compressor) ──────────
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256)
@@ -567,52 +367,30 @@ const assets = join(root, 'src', 'assets')
 mkdirSync(assets, { recursive: true })
 
 /**
- * Debug aid: `node scripts/sprite.mjs --dump body 1` prints one frame as an ASCII
- * map (`.` transparent, otherwise the palette index in base 36). Comparing the
- * map with the render is how misplaced shapes get found without guessing.
+ * Debug aid: `node scripts/sprite.mjs --dump` prints the head as an ASCII map
+ * (`.` transparent, otherwise the palette index in base 36).
  */
 if (process.argv[2] === '--dump') {
-  const kind = process.argv[3] ?? 'body'
-  const frame = Number(process.argv[4] ?? 0)
-  const canvas = kind === 'head' ? drawHead(false) : kind === 'idle' ? drawIdle(frame === 1) : drawBody(frame)
+  const canvas = drawHead(false)
   const chars = '0123456789abcdefghijklmnopqrstuvwxyz'
-  const lines = []
+  const rows = []
   for (let y = 0; y < canvas.height; y += 1) {
     let line = String(y).padStart(2, ' ')
     for (let x = 0; x < canvas.width; x += 1) {
       const index = canvas.pixels[y * canvas.width + x]
       line += index === 0 ? '.' : chars[index]
     }
-    lines.push(line)
+    rows.push(line)
   }
-  console.log(lines.join('\n'))
+  console.log(rows.join('\n'))
   process.exit(0)
 }
 
-// The shout loop ships as one vertical strip: a single URL in the stylesheet and
-// a three-step `background-position` animation, instead of three separate
-// background-image swaps. The waiting Ork is a two-frame strip for the same
-// reason (eyes open / eyes shut).
-const SHOUT_FRAMES = 3
-const strip = new Canvas(BODY_W, BODY_H * SHOUT_FRAMES)
-for (let frame = 0; frame < SHOUT_FRAMES; frame += 1) {
-  strip.pixels.set(drawBody(frame).pixels, frame * BODY_W * BODY_H)
-}
-const IDLE_FRAMES = 2
-const idle = new Canvas(BODY_W, BODY_H * IDLE_FRAMES)
-for (let frame = 0; frame < IDLE_FRAMES; frame += 1) {
-  idle.pixels.set(drawIdle(frame === 1).pixels, frame * BODY_W * BODY_H)
-}
-
-const outputs = [
-  [drawHead(false), 3, 'ork-open.png'],
-  [idle, 2, 'ork-idle.png'],
-  [strip, 2, 'ork-shout.png']
-]
-
-for (const [canvas, scale, file] of outputs) {
-  const { width, height, out } = upscale(canvas, scale)
-  const png = encodePng(width, height, out)
-  writeFileSync(join(assets, file), png)
-  console.log(`${file}: ${width}x${height}, ${png.length} bytes`)
-}
+// Only the 16px icon art is drawn by hand now. The mascot itself is generated
+// art: scripts/mascot.py builds ork-idle.png and ork-shout.png in this same
+// directory, with one image-model call per frame and the character kept
+// consistent by feeding each new frame the first one as a reference.
+const { width, height, out: pixels } = upscale(drawHead(false), 3)
+const png = encodePng(width, height, pixels)
+writeFileSync(join(assets, 'ork-open.png'), png)
+console.log(`ork-open.png: ${width}x${height}, ${png.length} bytes`)
