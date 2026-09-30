@@ -132,14 +132,17 @@ const CSS = [
   sendRule('::before{content:"Waaagh!";font-size:13px;font-weight:700;line-height:1}'),
   /*
    * Running indicator → green "Waaaaaaagh!!!". The running label is located at
-   * runtime (visible polite live region on ≤0.1.6, the current turn's
-   * process-row label on 0.1.7+) and tagged with `data-waaagh-run-label`. The
-   * size reset needs `!important`: the owner's own class rule matches with the
-   * same specificity and may be injected after this tag. The legacy status
-   * element's duration/clock child stays readable.
+   * runtime and tagged with `data-waaagh-run-label`: `[data-chat-running]`'s
+   * shimmer text on the desktop build (RunningStatus, the blue line), the
+   * visible polite live region on ≤0.1.6, or the current turn-process row label
+   * on npm's 0.1.7. The size reset needs `!important` (the owner's class rule
+   * matches with the same specificity and may be injected later); the shimmer
+   * paints text through `-webkit-text-fill-color`, so both the reset and the
+   * pseudo-element have to restore it or the replacement stays invisible. The
+   * bellow itself comes from `--waaagh-running` so its a-run is random per run.
    */
-  'html[data-waaagh-running=on] [data-waaagh-run-label]{font-size:0!important;background:none;animation:none;-webkit-text-fill-color:currentColor}',
-  `[data-waaagh-run-label]::before{content:"Waaaaaaagh!!!";font-size:14px;color:${GREEN}}`,
+  '[data-waaagh-run-label]{font-size:0!important;background:none!important;animation:none!important;-webkit-text-fill-color:currentColor!important}',
+  `[data-waaagh-run-label]::before{content:var(--waaagh-running,"Waaaaaaagh!!!");font-size:14px;font-weight:400;color:${GREEN};-webkit-text-fill-color:currentColor}`,
   '[data-waaagh-run-label] > span[class*=Clock]{font-size:13px!important;color:var(--dsw-alias-label-caption);-webkit-text-fill-color:currentColor;margin-left:8px}',
   /* Output mask: hide assistant thinking + prose */
   'html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step] > *{display:none!important}',
@@ -149,7 +152,7 @@ const CSS = [
   `html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{content:var(--waaagh-word,"Waaaaaaagh!!!");display:inline-block;color:${GREEN};font-size:16px;font-weight:700;line-height:24px}`,
   /* Streaming turns only → growing a's (GPU clip-path, no reflow) */
   '@keyframes waaagh-grow{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}',
-  'html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]:has([data-streaming])::before{content:"Waaaaaaaaaaaaaaagh!!!";white-space:nowrap;animation:waaagh-grow 1.6s steps(14,end) infinite}',
+  `html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]:has([data-streaming])::before{content:var(--waaagh-stream,"Waaaaaaaaaaaaaaagh!!!");white-space:nowrap;animation:waaagh-grow 1.6s steps(14,end) infinite}`,
   /* ── process-row leading icons → green Ork (tool/context/compaction) ─ */
   `.waaagh-tool-icon{display:inline-block;width:16px;height:16px;flex:none;background:url("${orkOpen}") center/contain no-repeat}`,
   `[data-chat-flow-kind=tool-call] [class*=leading]{position:relative;width:16px;height:16px;flex:none;background:url("${orkOpen}") center/contain no-repeat!important}`,
@@ -172,6 +175,17 @@ if (typeof document !== 'undefined' && document.querySelector(`style[data-plugin
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+/**
+ * Random-length Ork bellow: "W" + (minAs..minAs+spread) "a" + "gh" + 1..3 "!".
+ * Every mask draws its own a-run, so no two masks read the same.
+ * @param minAs - lower bound of the a-run.
+ * @param spread - size of the a-run's random window.
+ */
+function randomBellow(minAs = 2, spread = 30): string {
+  const a = minAs + Math.floor(Math.random() * spread)
+  const bangs = '!'.repeat(1 + Math.floor(Math.random() * 3))
+  return `W${'a'.repeat(a)}gh${bangs}`
+}
 
 // ── global output-mask state (one toggle across sessions) ─────────────────────
 let outputRevealed = false
@@ -195,37 +209,57 @@ function subscribeOutput(listener: (value: boolean) => void): () => void {
 /** Whether the addressed session currently runs a turn (set by the composer Ork). */
 let runningNow = false
 let markScheduled = false
+/**
+ * Bellow for the current run. It is redrawn once when a run starts and then
+ * reused for every re-render: the status node is re-created as the duration
+ * ticks, so keying the word on the node would reshuffle the a-run every second.
+ */
+let runningWord = randomBellow()
 /** Drop the running label from whichever element carried it. */
 function clearRunningLabel(): void {
   if (typeof document === 'undefined') return
   for (const el of document.querySelectorAll('[data-waaagh-run-label]')) {
     el.removeAttribute('data-waaagh-run-label')
+    ;(el as HTMLElement).style.removeProperty('--waaagh-running')
   }
 }
 /**
- * Tag the element that shows the visible running label.
+ * Locate the element that shows the visible running label.
  *
- * The label moved between versions: ≤0.1.6 renders the turn status itself as a
- * visible `role=status aria-live=polite` element, while 0.1.7+ keeps that live
- * region screen-reader-only (`visuallyHidden`) and shows the label in the
- * current turn's process row. The visible polite region wins when one exists;
- * otherwise the last turn-process row (document order = turn order) supplies its
- * label.
+ * The label moved twice: ≤0.1.6 renders the turn status itself as a visible
+ * `role=status aria-live=polite` element; npm's 0.1.7 keeps that live region
+ * screen-reader-only and shows the label in the current turn's process row; the
+ * desktop build goes further — its turn-process row returns null while a turn is
+ * open and the blue "深度求索中，用时 …" line comes from a separate RunningStatus
+ * component, `[data-chat-running]`, mounted only while the session runs.
+ * @returns the label element, or null when no running label is on screen.
+ */
+function findRunningLabel(): Element | null {
+  // Newest layout: the dedicated running indicator.
+  for (const el of document.querySelectorAll('[data-chat-running]')) {
+    const label = el.querySelector('[data-text-shimmer]')
+    if (label !== null && el.getBoundingClientRect().height > 4) return label
+  }
+  // ≤0.1.6: the visible polite live region IS the running label.
+  for (const el of document.querySelectorAll('[data-chat-flow] [role=status][aria-live=polite]')) {
+    const box = el.getBoundingClientRect()
+    if (box.width > 4 && box.height > 4) return el
+  }
+  // npm's 0.1.7: the open turn's process-row label.
+  const rows = document.querySelectorAll('[data-chat-flow-kind=turn-process] [data-turn-process]')
+  return rows[rows.length - 1]?.querySelector(':scope > span') ?? null
+}
+/**
+ * Mask the running label with the current run's bellow.
  */
 function markRunningLabel(): void {
   if (typeof document === 'undefined') return
   clearRunningLabel()
   if (!runningNow) return
-  for (const el of document.querySelectorAll('[data-chat-flow] [role=status][aria-live=polite]')) {
-    const box = el.getBoundingClientRect()
-    if (box.width > 4 && box.height > 4) {
-      el.setAttribute('data-waaagh-run-label', '')
-      return
-    }
-  }
-  const rows = document.querySelectorAll('[data-chat-flow-kind=turn-process] [data-turn-process]')
-  const label = rows[rows.length - 1]?.querySelector(':scope > span') ?? null
-  if (label) label.setAttribute('data-waaagh-run-label', '')
+  const label = findRunningLabel()
+  if (label === null) return
+  label.setAttribute('data-waaagh-run-label', '')
+  ;(label as HTMLElement).style.setProperty('--waaagh-running', JSON.stringify(runningWord))
 }
 /** Coalesce observer-driven re-marking into one pass per frame budget. */
 function scheduleMarkRunningLabel(): void {
@@ -239,8 +273,11 @@ function scheduleMarkRunningLabel(): void {
 
 // ── WaaaghOrc (conversation.input.left): the decorative Ork head ─────────────
 const ORK_WORDS = ['Waaagh!', '俺寻思这能成……', 'More dakka!', "Gork n' Mork!", '俺寻思……', 'Waaaaaaagh!!!']
-const ORK_MASKS = [
-  'Waaaaaaagh!!!',
+/**
+ * Fixed Ork phrases for masked messages. The pure bellow is deliberately NOT in
+ * this list: it is generated per mask so its a-run varies.
+ */
+const ORK_PHRASES = [
   '俺寻思这能成……',
   'More dakka!',
   "Gork n' Mork!",
@@ -255,8 +292,10 @@ const ORK_MASKS = [
   'Green iz best, boss!',
   "Wot iz da meanin'?"
 ]
+/** One message mask: half bellows (random a-run), half fixed Ork phrases. */
 function randomMaskWord(): string {
-  return ORK_MASKS[Math.floor(Math.random() * ORK_MASKS.length)] ?? 'Waaaaaaagh!!!'
+  if (Math.random() < 0.5) return randomBellow()
+  return ORK_PHRASES[Math.floor(Math.random() * ORK_PHRASES.length)] ?? randomBellow()
 }
 
 function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
@@ -285,6 +324,15 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     if (!running) return
     const id = setInterval(() => setWordIndex((index) => (index + 1) % ORK_WORDS.length), 700)
     return () => clearInterval(id)
+  }, [running])
+
+  // One bellow per run: drawn when a turn starts, then reused while it streams
+  // (the status node is re-created on every duration tick, so a per-node draw
+  // would reshuffle the a-run once a second).
+  React.useEffect(() => {
+    if (!running) return
+    runningWord = randomBellow()
+    markRunningLabel()
   }, [running])
 
   // While running: flag the document, swap the composer placeholder for a
@@ -402,13 +450,15 @@ export function apply(ctx: Context): void {
     return () => document.removeEventListener('click', onClick)
   })
 
-  // Give each masked message its own random Ork phrase, and paint the Ork over
-  // every process-row leading icon.
+  // Give each masked message its own random Ork phrase (and its own random
+  // streaming bellow), and paint the Ork over every process-row leading icon.
   ctx.effect(() => {
     if (typeof document === 'undefined') return () => {}
     const setWord = (el: Element): void => {
       try {
-        ;(el as HTMLElement).style.setProperty('--waaagh-word', `"${randomMaskWord()}"`)
+        const node = el as HTMLElement
+        node.style.setProperty('--waaagh-word', `"${randomMaskWord()}"`)
+        node.style.setProperty('--waaagh-stream', `"${randomBellow(8, 14)}"`)
       } catch {
         /* detached node: the CSS fallback phrase applies */
       }

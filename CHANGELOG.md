@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.2 (2026-09-26)
+
+The running indicator now covers the desktop build's own status line, and every
+bellow draws its own a-run:
+
+- The desktop's in-app chat package is newer than npm's 0.1.7-rc.2: its
+  turn-process row returns `null` while a turn is open (`if (turn?.status !==
+  "closed") return null`), and the blue "深度求索中，用时 …" line comes from a
+  separate `RunningStatus` component. The indicator is now located by
+  `[data-chat-running] [data-text-shimmer]` first, with the visible polite live
+  region (≤0.1.6) and the turn-process row (npm 0.1.7) kept as fallbacks. The
+  shimmer paints through `-webkit-text-fill-color`, so the replacement restores
+  it explicitly or it would stay invisible.
+- Every mask gets a random a-run: `W` + 2..31 `a` + `gh` + 1..3 `!`. Masked
+  messages draw one per message (half bellows, half the fixed Ork phrases), the
+  streaming wipe draws a longer one, and the running label draws one per run —
+  reused while that run streams, because the status node is re-created on every
+  duration tick and a per-node draw would reshuffle it once a second.
+
 ## 0.2.1 (2026-09-26)
 
 **Removed the input mask.** It masked the requirement *inside the composer draft*

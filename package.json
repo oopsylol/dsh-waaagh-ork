@@ -1,6 +1,6 @@
 {
   "name": "dsh-waaagh-ork",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web and DSH Desktop: green Ork skin + blinking mascot, the model's thinking and output masked as green \"Waaaaaaagh!!!\" (click to reveal the original), and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator. Never touches the composer draft: what you type is what gets sent.",
   "license": "MIT",
   "type": "module",
@@ -82,6 +82,7 @@
     "@deepseek-ai/dsh-client-locale": "0.1.7-rc.2",
     "@deepseek-ai/dsh-client-shortcuts": "0.1.7-rc.2",
     "@deepseek-ai/dsh-client-store": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-client-ui-chat": "0.1.7-rc.2",
     "@deepseek-ai/dsh-client-ui-conversation": "0.1.7-rc.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.7-rc.2",
     "@deepseek-ai/dsh-client-ui-renderer": "0.1.7-rc.2",
