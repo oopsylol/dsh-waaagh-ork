@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.1 (2026-09-30)
+
+The waiting corner was fidgeting. Two things made it busy:
+
+- **A pose held 9 seconds.** It holds 28 now, and the order was reshuffled so the
+  calm strips come first (scratching, sitting, paddling, drowning) and the
+  excitable ones last (waving, choppa, dakka) — most of the time he is just
+  waiting, which is the point.
+- **Every strip walked at 0.8s a loop**, a speed tuned for shouting while the model
+  answers. Waiting walks at 2.2s now (a 5-frame strip at 440ms a frame); working
+  keeps 0.8s fast / 1.3s slow, because effort should look like effort.
+
+Verified live: the waiting pose held for a full 15s sample window without changing,
+and the working state still reports the 0.8s walk with a 5s pass.
+
 ## 0.11.0 (2026-09-30)
 
 The two states had their jobs swapped. Waiting is where the variety belongs, and

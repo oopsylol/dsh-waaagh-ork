@@ -157,7 +157,7 @@ const CSS = [
    *   drown  four frames
    * A custom avatar overrides the lot with one still image.
    */
-  `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 500%;animation:waaagh-mood-frames .8s step-end infinite}`,
+  `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 500%;animation:waaagh-mood-frames var(--waaagh-walk,2.2s) step-end infinite}`,
   `html[data-waaagh-mood=idle-a] .waaagh-act{background-image:var(--waaagh-face,url("${orkIdleA}"));background-size:100% 300%;animation:waaagh-blink 5s step-end infinite}`,
   `html[data-waaagh-mood=idle-b] .waaagh-act{background-image:var(--waaagh-face,url("${orkIdleB}"));background-size:100% 300%;animation:waaagh-blink 5s step-end infinite}`,
   `html[data-waaagh-mood=swim] .waaagh-act{background-image:var(--waaagh-face,url("${orkSwim}"))}`,
@@ -177,11 +177,12 @@ const CSS = [
    * progress bar — back and forth over the card, outside it — and goes under when
    * the turn drags. The ends of the run and the height of the top edge are
    * measured in `fitMascot`, since percentages of the containing block mean
-   * nothing here.
+   * nothing here. Working walks its frames faster than waiting does: 0.8s a loop
+   * reads as effort when the model is answering, and as fidgeting when it is not.
    */
-  'html[data-waaagh-running=on] .waaagh-orc{animation:waaagh-progress var(--waaagh-lap,9s) ease-in-out infinite alternate}',
+  'html[data-waaagh-running=on] .waaagh-orc{--waaagh-walk:.8s;animation:waaagh-progress var(--waaagh-lap,9s) ease-in-out infinite alternate}',
   'html[data-waaagh-swim=fast] .waaagh-orc{--waaagh-lap:5s}',
-  'html[data-waaagh-swim=slow] .waaagh-orc{--waaagh-lap:14s}',
+  'html[data-waaagh-swim=slow] .waaagh-orc{--waaagh-lap:14s;--waaagh-walk:1.3s}',
   /* He keeps his place while drowning: going under is the strip, a fade and a tilt. */
   'html[data-waaagh-swim=drown] .waaagh-orc{animation:waaagh-sink 6s ease-in-out 1 forwards}',
   '@keyframes waaagh-mood-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
@@ -347,13 +348,18 @@ let runningWord = randomBellow()
  */
 /**
  * Which strip is playing, in both states: waiting rotates through every mood (the
- * corner is a little variety show — paddling, waving, choppa, dakka, and him going
- * under), working pins it to the swim and swaps to the drown when the turn drags.
- * Moods are named by the `<html>` data attribute the stylesheet keys on.
+ * corner is a little variety show — scratching, sitting, paddling, and him going
+ * under, with the excitable strips last so most of the time it reads calm), and
+ * working pins it to the swim, swapping to the drown when the turn drags. Moods
+ * are named by the `<html>` data attribute the stylesheet keys on.
  */
-const IDLE_MOODS = ['idle-a', 'idle-b', 'swim', 'wave', 'choppa', 'dakka', 'drown']
+const IDLE_MOODS = ['idle-a', 'idle-b', 'swim', 'drown', 'wave', 'choppa', 'dakka']
 const CHEER_MOODS = ['wave', 'choppa', 'dakka']
-const IDLE_MOOD_MS = 9000
+/**
+ * How long a waiting pose holds. It was 9s, which read as fidgeting: the corner is
+ * supposed to be a mascot waiting, not performing.
+ */
+const IDLE_MOOD_MS = 28000
 function pickSet(sets: readonly string[]): string {
   const picked = sets[Math.floor(Math.random() * sets.length)]
   return picked ?? 'a'
