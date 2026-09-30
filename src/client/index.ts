@@ -149,17 +149,23 @@ const CSS = [
   'html[data-waaagh-orc] [data-composer-card]{padding-left:18px!important}',
   `.waaagh-orc{position:absolute;z-index:40;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
   /*
-   * Waiting: two idle sets, each a two-frame strip (eyes open, eyes shut). The set
-   * is picked on load and rotated on a timer — one fixed pose forever is what the
-   * corner was before. Set A is the default so the stylesheet still works before
-   * the script has chosen.
+   * One layer carries every state: waiting, working and the celebration are all
+   * "which mood strip is playing". Waiting rotates through all of them, so the
+   * corner is a little variety show rather than one pose on repeat:
+   *   idle-a / idle-b  three frames each, walking as an eyelid roll
+   *   swim / wave / choppa / dakka  five frames
+   *   drown  four frames
+   * A custom avatar overrides the lot with one still image.
    */
-  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkIdleA}"));background-size:100% 300%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-blink 5s step-end infinite}`,
-  `html[data-waaagh-idle=b] .waaagh-orc::before{background-image:var(--waaagh-face,url("${orkIdleB}"))}`,
-  /* A custom avatar is one still image: no strip, so no blink walk. */
-  '.waaagh-custom::before{background-size:contain!important;background-position:center!important;animation:none!important}',
-  /* Three frames (open, half shut, shut) walked as an eyelid roll, not a flicker. */
-  '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
+  `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 500%;animation:waaagh-mood-frames .8s step-end infinite}`,
+  `html[data-waaagh-mood=idle-a] .waaagh-act{background-image:var(--waaagh-face,url("${orkIdleA}"));background-size:100% 300%;animation:waaagh-blink 5s step-end infinite}`,
+  `html[data-waaagh-mood=idle-b] .waaagh-act{background-image:var(--waaagh-face,url("${orkIdleB}"));background-size:100% 300%;animation:waaagh-blink 5s step-end infinite}`,
+  `html[data-waaagh-mood=swim] .waaagh-act{background-image:var(--waaagh-face,url("${orkSwim}"))}`,
+  `html[data-waaagh-mood=wave] .waaagh-act{background-image:var(--waaagh-face,url("${orkShoutA}"))}`,
+  `html[data-waaagh-mood=choppa] .waaagh-act{background-image:var(--waaagh-face,url("${orkShoutB}"))}`,
+  `html[data-waaagh-mood=dakka] .waaagh-act{background-image:var(--waaagh-face,url("${orkShoutC}"))}`,
+  `html[data-waaagh-mood=drown] .waaagh-act{background-image:var(--waaagh-face,url("${orkDrown}"));background-size:100% 400%;animation:waaagh-drown-frames 1.4s step-end infinite}`,
+  '.waaagh-custom .waaagh-act{background-image:var(--waaagh-face)!important;background-size:contain!important;background-position:center!important;animation:none!important}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
      the owner renders `[data-composer-placeholder]` only while the draft is
      empty, which is the one draft signal available without touching the editor. */
@@ -167,40 +173,28 @@ const CSS = [
   /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working: he swims a lap around the bubble, changing expression as he goes —
-   * paddling, waving, flailing the choppa, dakka — and going under when the turn
-   * drags. The lap is a rectangle just outside the card, with the four corners
-   * measured in `fitMascot`; speeds come from `data-waaagh-swim`.
+   * Working: he swims along the top of the input box like an indeterminate
+   * progress bar — back and forth over the card, outside it — and goes under when
+   * the turn drags. The ends of the run and the height of the top edge are
+   * measured in `fitMascot`, since percentages of the containing block mean
+   * nothing here.
    */
-  `.waaagh-act{position:absolute;inset:0;display:none;background-size:100% 500%;background-position:0 0;background-repeat:no-repeat}`,
-  'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
-  'html[data-waaagh-running=on] .waaagh-act{display:block;animation:waaagh-mood-frames .8s step-end infinite}',
-  `html[data-waaagh-running=on][data-waaagh-mood=swim] .waaagh-act{background-image:url("${orkSwim}")}`,
-  `html[data-waaagh-running=on][data-waaagh-mood=a] .waaagh-act{background-image:url("${orkShoutA}")}`,
-  `html[data-waaagh-running=on][data-waaagh-mood=b] .waaagh-act{background-image:url("${orkShoutB}")}`,
-  `html[data-waaagh-running=on][data-waaagh-mood=c] .waaagh-act{background-image:url("${orkShoutC}")}`,
-  /* Drowning wins over the mood: it is the "this is taking too long" signal. */
-  `html[data-waaagh-swim=drown] .waaagh-act{background-image:url("${orkDrown}")!important;background-size:100% 400%;animation:waaagh-drown-frames 1.4s step-end infinite}`,
-  'html[data-waaagh-swim=fast] .waaagh-orc{animation:waaagh-lap 9s linear infinite}',
-  'html[data-waaagh-swim=slow] .waaagh-orc{animation:waaagh-lap 18s linear infinite}',
+  'html[data-waaagh-running=on] .waaagh-orc{animation:waaagh-progress var(--waaagh-lap,9s) ease-in-out infinite alternate}',
+  'html[data-waaagh-swim=fast] .waaagh-orc{--waaagh-lap:5s}',
+  'html[data-waaagh-swim=slow] .waaagh-orc{--waaagh-lap:14s}',
   /* He keeps his place while drowning: going under is the strip, a fade and a tilt. */
   'html[data-waaagh-swim=drown] .waaagh-orc{animation:waaagh-sink 6s ease-in-out 1 forwards}',
   '@keyframes waaagh-mood-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
   '@keyframes waaagh-drown-frames{0%{background-position:0 0}25%{background-position:0 33.33%}50%{background-position:0 66.66%}75%{background-position:0 100%}}',
-  '@keyframes waaagh-lap{0%{left:var(--lap-x0);top:var(--lap-y0)}25%{left:var(--lap-x1);top:var(--lap-y0)}50%{left:var(--lap-x1);top:var(--lap-y1)}75%{left:var(--lap-x0);top:var(--lap-y1)}100%{left:var(--lap-x0);top:var(--lap-y0)}}',
+  '@keyframes waaagh-progress{from{left:var(--lap-x0);top:var(--lap-y0)}to{left:var(--lap-x1);top:var(--lap-y0)}}',
   '@keyframes waaagh-sink{0%{opacity:1;transform:rotate(0)}30%{opacity:.45;transform:rotate(26deg) translateY(12px)}70%{opacity:.45;transform:rotate(26deg) translateY(12px)}100%{opacity:1;transform:rotate(0)}}',
+  '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /*
-   * The turn finishing is worth a WAAAGH: the shout sets play for a couple of
-   * seconds when the reply lands, then the waiting pose comes back.
+   * The turn finishing is worth a WAAAGH: a shout mood plays for a couple of
+   * seconds when the reply lands, with this run's bellow in a starburst.
    */
-  `html[data-waaagh-cheer=on] .waaagh-act{display:block;background-image:url("${orkShoutA}");background-size:100% 500%;animation:waaagh-shout-flip 1.75s step-end infinite}`,
-  `html[data-waaagh-cheer=on][data-waaagh-set=b] .waaagh-act{background-image:url("${orkShoutB}")}`,
-  `html[data-waaagh-cheer=on][data-waaagh-set=c] .waaagh-act{background-image:url("${orkShoutC}")}`,
-  'html[data-waaagh-cheer=on] .waaagh-orc::before{display:none}',
-  /* …with this run's bellow in a starburst beside him. */
   `html[data-waaagh-cheer=on] .waaagh-orc::after{content:var(--waaagh-bellow,"WAAAGH!");position:absolute;left:-84%;top:2%;padding:15px 12px;font:900 13px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.05em;color:#0f1a06;background:${GREEN};clip-path:${starburst(10, 62)};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-7deg);white-space:nowrap;animation:waaagh-burst-pop 1.1s ease-in-out infinite}`,
   '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-6deg) scale(.92)}45%{transform:rotate(-9deg) scale(1.08)}}',
-  '@keyframes waaagh-shout-flip{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
   '.waaagh-toggle{flex:none;height:28px;color:' + GREEN + ';cursor:pointer;background:0 0;border:1px solid ' + GREEN + ';border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;transition:transform .12s ease,background .12s ease}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}.waaagh-toggle:active{transform:scale(.94)}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
   '.waaagh-settings-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
@@ -351,19 +345,18 @@ let runningWord = randomBellow()
  * one loop forever. Sets are named by the `<html>` data attributes the stylesheet
  * keys on, so picking one is just a DOM write.
  */
-const IDLE_SETS = ['a', 'b']
-const SHOUT_SETS = ['a', 'b', 'c']
-/** How often a long turn swaps to another shout set, and idle swaps its pose. */
-const SHOUT_SWAP_MS = 9000
-const IDLE_SWAP_MS = 20000
+/**
+ * Which strip is playing, in both states: waiting rotates through every mood (the
+ * corner is a little variety show — paddling, waving, choppa, dakka, and him going
+ * under), working pins it to the swim and swaps to the drown when the turn drags.
+ * Moods are named by the `<html>` data attribute the stylesheet keys on.
+ */
+const IDLE_MOODS = ['idle-a', 'idle-b', 'swim', 'wave', 'choppa', 'dakka', 'drown']
+const CHEER_MOODS = ['wave', 'choppa', 'dakka']
+const IDLE_MOOD_MS = 9000
 function pickSet(sets: readonly string[]): string {
   const picked = sets[Math.floor(Math.random() * sets.length)]
   return picked ?? 'a'
-}
-/** Draw a set that is not the current one, so a swap is always visible. */
-function pickOtherSet(sets: readonly string[], current: string | undefined): string {
-  const others = sets.filter((set) => set !== current)
-  return pickSet(others.length > 0 ? others : sets)
 }
 /**
  * Fit the waiting mascot into the margin left of the composer card, and measure
@@ -400,18 +393,15 @@ function fitMascot(orc: HTMLElement | null): void {
   orc.style.height = `${height}px`
   orc.style.left = `${left}px`
   orc.style.top = `${top}px`
-  // The lap runs around the outside of the card: down the left margin, across
-  // under it, up the right margin, back over the top. All four corners are
-  // measured, because a percentage of the containing block is meaningless here.
+  // The progress bar travels along the card's top edge: measured ends, and a
+  // height that keeps him clear of the bubble's border.
   const gap = 6
   const x0 = Math.round(cardBox.left - width - gap - parentBox.left)
   const x1 = Math.round(cardBox.right + gap - parentBox.left)
-  const y0 = Math.round(cardBox.top - parentBox.top - height * 0.55)
-  const y1 = Math.round(cardBox.top + cardBox.height - parentBox.top - height * 0.45)
+  const y0 = Math.round(cardBox.top - parentBox.top - height * 0.72)
   orc.style.setProperty('--lap-x0', `${x0}px`)
   orc.style.setProperty('--lap-x1', `${x1}px`)
   orc.style.setProperty('--lap-y0', `${y0}px`)
-  orc.style.setProperty('--lap-y1', `${y1}px`)
   orc.style.setProperty('--waaagh-w', `${width}px`)
   orc.style.setProperty('--waaagh-h', `${height}px`)
 }
@@ -473,13 +463,6 @@ const DROWN_MS = 6000
 const LONG_TURN_MS = 45000
 /** How long the Ork shouts after a turn lands. */
 const CHEER_MS = 2600
-/**
- * Expressions he cycles through while lapping the bubble. "轮换各种表情": the
- * swim is the base, and the shout sets are the variety — he paddles, waves,
- * flails the choppa, then does dakka, and starts over.
- */
-const MOODS = ['swim', 'a', 'swim', 'b', 'swim', 'c']
-const MOOD_MS = 6000
 /** Any transcript mutation counts as the model making progress. */
 function noteActivity(): void {
   lastActivityAt = Date.now()
@@ -555,10 +538,18 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     if (typeof document === 'undefined') return
     const root = document.documentElement
     root.dataset.waaaghOrc = 'on'
-    if (!root.dataset.waaaghIdle) root.dataset.waaaghIdle = pickSet(IDLE_SETS)
+    // Waiting is a rotation through every mood, not one pose: each tick steps to
+    // the next strip, so paddling, waving, the choppa, dakka and even drowning all
+    // show up while nothing is being asked of him.
+    let moodIndex = Math.max(0, IDLE_MOODS.indexOf(root.dataset.waaaghMood ?? ''))
+    root.dataset.waaaghMood = IDLE_MOODS[moodIndex] ?? 'idle-a'
     const id = setInterval(() => {
-      root.dataset.waaaghIdle = pickOtherSet(IDLE_SETS, root.dataset.waaaghIdle)
-    }, IDLE_SWAP_MS)
+      // While a turn runs the mood belongs to the swim logic; without this the
+      // rotation and the swim fight over the attribute and the strip flickers.
+      if (runningNow) return
+      moodIndex = (moodIndex + 1) % IDLE_MOODS.length
+      root.dataset.waaaghMood = IDLE_MOODS[moodIndex] ?? 'idle-a'
+    }, IDLE_MOOD_MS)
     const resize = (): void => fitMascot(orcRef.current)
     resize()
     window.addEventListener('resize', resize)
@@ -581,32 +572,21 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     return () => clearInterval(id)
   }, [running])
 
-  // While a turn runs the Ork laps the bubble, and both the pace and the face come
-  // from how the turn is going: fast while the reply streams, slow once the
-  // transcript goes quiet, under water when it stays quiet or just drags on, and a
-  // different expression every few seconds in between. He comes back up himself.
+  // While a turn runs he swims along the top of the box like a progress bar, and
+  // the pace comes from how the turn is going: fast while the reply streams, slow
+  // once the transcript goes quiet, and under water when it stays quiet or the turn
+  // just drags on. He comes back up by himself.
   React.useEffect(() => {
     if (!running) return
     runningWord = randomBellow()
     burstWord = randomBellow(2, 6)
     const root = document.documentElement
-    root.dataset.waaaghSet = pickSet(SHOUT_SETS)
     lastActivityAt = Date.now()
     runStartedAt = Date.now()
     drownUntil = 0
     root.dataset.waaaghSwim = 'fast'
-    let moodIndex = 0
-    root.dataset.waaaghMood = MOODS[moodIndex] ?? 'swim'
+    root.dataset.waaaghMood = 'swim'
     markRunningLabel()
-    // The set keeps changing while the turn lasts, so a long answer does not
-    // replay one pose, and the celebration WAAAGH when it lands uses the same set.
-    const swap = setInterval(() => {
-      root.dataset.waaaghSet = pickOtherSet(SHOUT_SETS, root.dataset.waaaghSet)
-    }, SHOUT_SWAP_MS)
-    const mood = setInterval(() => {
-      moodIndex = (moodIndex + 1) % MOODS.length
-      root.dataset.waaaghMood = MOODS[moodIndex] ?? 'swim'
-    }, MOOD_MS)
     const swim = setInterval(() => {
       const now = Date.now()
       if (now < drownUntil) return
@@ -616,19 +596,20 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
         runStartedAt = now
         lastActivityAt = now
         root.dataset.waaaghSwim = 'fast'
+        root.dataset.waaaghMood = 'swim'
         return
       }
       const quiet = now - lastActivityAt
       if (quiet > QUIET_SLOW_MS || now - runStartedAt > LONG_TURN_MS) {
         drownUntil = now + DROWN_MS
         root.dataset.waaaghSwim = 'drown'
+        root.dataset.waaaghMood = 'drown'
         return
       }
       root.dataset.waaaghSwim = quiet < QUIET_FAST_MS ? 'fast' : 'slow'
+      root.dataset.waaaghMood = 'swim'
     }, 1000)
     return () => {
-      clearInterval(swap)
-      clearInterval(mood)
       clearInterval(swim)
       delete root.dataset.waaaghSwim
       delete root.dataset.waaaghMood
@@ -636,15 +617,17 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   }, [running])
 
   // The turn landing is worth a WAAAGH: a couple of seconds of shouting, then the
-  // waiting pose.
+  // waiting rotation picks up again.
   React.useEffect(() => {
     if (running || typeof document === 'undefined') return
     if (runStartedAt === 0) return
     const root = document.documentElement
     root.dataset.waaaghCheer = 'on'
+    root.dataset.waaaghMood = pickSet(CHEER_MOODS)
     root.style.setProperty('--waaagh-bellow', JSON.stringify(burstWord))
     const id = setTimeout(() => {
       delete root.dataset.waaaghCheer
+      delete root.dataset.waaaghMood
       root.style.removeProperty('--waaagh-bellow')
     }, CHEER_MS)
     return () => {

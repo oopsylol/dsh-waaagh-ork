@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.11.0 (2026-09-30)
+
+The two states had their jobs swapped. Waiting is where the variety belongs, and
+working should read like a progress bar.
+
+- **Waiting rotates through every mood**, one every 9s: scratching his head,
+  sitting on the ground, paddling, waving, flailing the choppa, dakka — and going
+  under. Seven strips, so the corner is a little variety show instead of one pose.
+- **Working swims along the top of the input box** — a horizontal sweep from the
+  card's left edge to its right and back, on the outside, at 5s per pass while the
+  reply streams and 14s while it is quiet. Measured live: the travel stays at one
+  height (87px above the card's top) while sweeping 884px horizontally, which is
+  the progress-bar read the request asked for. Drowning still stops him in place
+  with the fade and tilt.
+- **One layer for every state.** The waiting strips used to live on `::before` and
+  the working strips on the child span; both are the same thing — "which mood strip
+  is playing" — so the child span carries all of them, and a custom avatar is one
+  override instead of two.
+- Fixed while wiring it up: the waiting rotation kept ticking during a turn and
+  fought the swim logic over the same attribute, so the strip flickered between
+  moods mid-turn (measured `wave/fast` and `choppa/fast` during one run). The
+  rotation now stands down while `running`.
+
 ## 0.10.0 (2026-09-30)
 
 Two things from watching it in the real app again.
