@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.3 (2026-09-30)
+
+More Ork: seven small animations, all CSS-only and all switched off under
+`prefers-reduced-motion`:
+
+- Idle: the head breathes (4.2s bob) and keeps blinking; it leans in and flushes
+  greener as soon as the composer holds something — detected through the owner's
+  own `[data-composer-placeholder]`, which is rendered only while the draft is
+  empty, so the editor is still never touched.
+- Running: the Ork chants (fast bob + sway + green glow) for as long as the turn
+  runs, and the composer placeholder keeps cycling Ork lines.
+- Sending: the Ork barks once when your own message lands in the transcript
+  (`html[data-waaagh-send]` for 900ms, restarted per message, with a boot grace
+  window so opening a session does not bark at history).
+- Output mask: each masked message pops in; while streaming it wipes *and* sways
+  (two animations on different properties, so they compose).
+- Process rows: each tool/context/compaction Ork icon plays a one-shot "dakka"
+  flash as the row appears, and leans in on hover.
+- Chrome: the send pill squashes on hover/press, the 查看详情 toggle pops on press.
+- Centring moved from `transform:translateY(-50%)` to `top:calc(50% - 48px)` so
+  every animation owns `transform` outright.
+
 ## 0.2.2 (2026-09-26)
 
 The running indicator now covers the desktop build's own status line, and every

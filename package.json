@@ -1,6 +1,6 @@
 {
   "name": "dsh-waaagh-ork",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web and DSH Desktop: green Ork skin + blinking mascot, the model's thinking and output masked as green \"Waaaaaaagh!!!\" (click to reveal the original), and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator. Never touches the composer draft: what you type is what gets sent.",
   "license": "MIT",
   "type": "module",
