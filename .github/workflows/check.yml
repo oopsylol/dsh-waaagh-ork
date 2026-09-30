@@ -16,10 +16,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
+      - run: pnpm run sprite
       - run: pnpm run build
-      # lib/ is committed because the runtime never builds a plugin: a bundle
-      # that drifted from src/ must fail here.
-      - run: git diff --exit-code -- lib
+      # lib/ and src/assets/ are committed because the runtime never builds a
+      # plugin: a bundle or sprite that drifted from its generator must fail
+      # here (the sprite writer emits stored DEFLATE, so its bytes are stable).
+      - run: git diff --exit-code -- lib src/assets
       - run: node --check lib/client.js
       - run: node --check lib/index.js
       - run: node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"

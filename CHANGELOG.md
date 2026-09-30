@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.5 (2026-09-30)
+
+New mascot art. The old sprite was a photo-real-ish AI head; the ask was "cuter
+and dumber", and no image API is reachable from a desktop session (dsh-imagegen
+keeps its channel key as a sealed secret in the web profile), so the Ork is now
+*drawn* — on a 48x48 pixel grid, upscaled to a 144x144 palette PNG.
+
+- Design: one tall round head, two big googly eyes with the pupils pointing
+  different ways, a flat brow, a wide lopsided grin with upper teef, two stubby
+  tusks at the mouth corners, a tongue out, small swept ears and a bristle tuft.
+- Blink frame: same art with the sockets filled and a thin eyelid arc, drawn from
+  the same generator so the two frames stay aligned.
+- `scripts/sprite.mjs` + `npm run sprite`: the mascot is a build product like
+  `lib/`. Drawing order is silhouette → shading rings eroded from it → ink
+  outline → features; two earlier revisions failed here (shading after the
+  features erased the tusks; haloing a shading index in the blink frame outlined
+  the whole head).
+- PNGs are written by hand as 8-bit palette images with stored DEFLATE blocks and
+  home-rolled CRC/Adler, so the bytes are identical on every platform and CI can
+  fail on drift (`git diff --exit-code -- lib src/assets`).
+- 192x192 RGBA (28 KB each) → 144x144 palette (21 KB each); typed-checked build
+  pipeline unchanged.
+
 ## 0.2.4 (2026-09-30)
 
 The left-hand Ork is no longer a bare sprite on the card: it now stands on a
