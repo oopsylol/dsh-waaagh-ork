@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.10.0 (2026-09-30)
+
+Two things from watching it in the real app again.
+
+- **The black tab on the bubble's left edge** was the comic tail added in 0.6.0: a
+  `conic-gradient` wedge whose `background-position: left calc(100% - 30px)` is
+  resolved against the card's box *minus* the image's own height, so it landed
+  mid-card, and at 26x22 a 94-degree wedge rendered as a block rather than a point.
+  It is an inline SVG triangle now (20x18, `calc(50% - 9px)`), which is both the
+  shape and the place it was always meant to be. One line removes it entirely if
+  the bubble reads better without.
+- **He laps the whole bubble and changes face as he goes.** The lap was a vertical
+  shuffle down the card's left margin; now it is a rectangle around the card — down
+  the left, under it, up the right, back over the top — with all four corners
+  measured in `fitMascot` (percentages of the containing block are meaningless
+  there). A lap takes 9s while the reply streams and 18s while it is quiet.
+- **Expressions rotate every 6s while the turn lasts**: paddling → waving →
+  paddling → choppa → paddling → dakka. Drowning still overrides it, since that is
+  the "this is taking too long" signal.
+- Verified live: the tail is the SVG layer at 20x18, the Ork is seen on both the
+  left and right sides of the card during one turn, the mood walks swim → a → b,
+  no console errors.
+
 ## 0.9.1 (2026-09-30)
 
 The swimmer from 0.9.0 was invisible, and the sizing was anchored to the wrong box.

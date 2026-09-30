@@ -167,25 +167,27 @@ const CSS = [
   /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working: he swims laps along the bubble. `fast` while the reply is actually
-   * streaming, `slow` when it goes quiet, and `drown` when it drags — he goes
-   * under, then swims back. The travel animation owns `top`/`transform`, so it is
-   * declared after the idle rules; the strip walk lives on the inner layer.
+   * Working: he swims a lap around the bubble, changing expression as he goes —
+   * paddling, waving, flailing the choppa, dakka — and going under when the turn
+   * drags. The lap is a rectangle just outside the card, with the four corners
+   * measured in `fitMascot`; speeds come from `data-waaagh-swim`.
    */
   `.waaagh-act{position:absolute;inset:0;display:none;background-size:100% 500%;background-position:0 0;background-repeat:no-repeat}`,
   'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
-  'html[data-waaagh-running=on] .waaagh-act{display:block}',
-  `html[data-waaagh-swim=fast] .waaagh-act{background-image:url("${orkSwim}");animation:waaagh-swim-frames .7s step-end infinite}`,
-  `html[data-waaagh-swim=slow] .waaagh-act{background-image:url("${orkSwim}");animation:waaagh-swim-frames 1.6s step-end infinite}`,
-  `html[data-waaagh-swim=drown] .waaagh-act{background-image:url("${orkDrown}");background-size:100% 400%;animation:waaagh-drown-frames 1.4s step-end infinite}`,
-  'html[data-waaagh-swim=fast] .waaagh-orc{animation:waaagh-lap 3.6s ease-in-out infinite}',
-  'html[data-waaagh-swim=slow] .waaagh-orc{animation:waaagh-lap 8s ease-in-out infinite}',
+  'html[data-waaagh-running=on] .waaagh-act{display:block;animation:waaagh-mood-frames .8s step-end infinite}',
+  `html[data-waaagh-running=on][data-waaagh-mood=swim] .waaagh-act{background-image:url("${orkSwim}")}`,
+  `html[data-waaagh-running=on][data-waaagh-mood=a] .waaagh-act{background-image:url("${orkShoutA}")}`,
+  `html[data-waaagh-running=on][data-waaagh-mood=b] .waaagh-act{background-image:url("${orkShoutB}")}`,
+  `html[data-waaagh-running=on][data-waaagh-mood=c] .waaagh-act{background-image:url("${orkShoutC}")}`,
+  /* Drowning wins over the mood: it is the "this is taking too long" signal. */
+  `html[data-waaagh-swim=drown] .waaagh-act{background-image:url("${orkDrown}")!important;background-size:100% 400%;animation:waaagh-drown-frames 1.4s step-end infinite}`,
+  'html[data-waaagh-swim=fast] .waaagh-orc{animation:waaagh-lap 9s linear infinite}',
+  'html[data-waaagh-swim=slow] .waaagh-orc{animation:waaagh-lap 18s linear infinite}',
+  /* He keeps his place while drowning: going under is the strip, a fade and a tilt. */
   'html[data-waaagh-swim=drown] .waaagh-orc{animation:waaagh-sink 6s ease-in-out 1 forwards}',
-  '@keyframes waaagh-swim-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
+  '@keyframes waaagh-mood-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
   '@keyframes waaagh-drown-frames{0%{background-position:0 0}25%{background-position:0 33.33%}50%{background-position:0 66.66%}75%{background-position:0 100%}}',
-  '@keyframes waaagh-lap{0%,100%{top:var(--waaagh-from,10%);transform:rotate(-5deg)}50%{top:var(--waaagh-to,80%);transform:rotate(5deg)}}',
-  /* He keeps his place while drowning: going under is the strip and the fade, and
-     sinking below the composer would just leave the window. */
+  '@keyframes waaagh-lap{0%{left:var(--lap-x0);top:var(--lap-y0)}25%{left:var(--lap-x1);top:var(--lap-y0)}50%{left:var(--lap-x1);top:var(--lap-y1)}75%{left:var(--lap-x0);top:var(--lap-y1)}100%{left:var(--lap-x0);top:var(--lap-y0)}}',
   '@keyframes waaagh-sink{0%{opacity:1;transform:rotate(0)}30%{opacity:.45;transform:rotate(26deg) translateY(12px)}70%{opacity:.45;transform:rotate(26deg) translateY(12px)}100%{opacity:1;transform:rotate(0)}}',
   /*
    * The turn finishing is worth a WAAAGH: the shout sets play for a couple of
@@ -207,11 +209,12 @@ const CSS = [
   '.waaagh-settings-hint{font-size:12px;color:var(--dsw-alias-label-caption)}',
   /*
    * Comic speech bubble: a chunky ink outline with a hard offset shadow, and a
-   * tail on the left edge pointing at the Ork's mouth (kept below centre so the
-   * floating head never covers it). The tail is one extra background layer, so
-   * the card's own themed fill colour survives.
+   * tail on the left edge pointing at the Ork (kept near the card's middle, where
+   * his head is). The tail is an inline SVG triangle: the conic-gradient wedge it
+   * replaced resolved `calc(100% - 30px)` against the box *minus* the image, so it
+   * landed mid-card and rendered as a black block instead of a point.
    */
-  `[data-composer-card]{border:2px solid #2c3a22!important;border-radius:20px!important;box-shadow:4px 4px 0 rgba(28,42,18,.28),0 0 0 1px rgba(75,191,42,.35)!important;background-image:conic-gradient(from 268deg at 100% 50%,#2c3a22 0 26%,transparent 26%)!important;background-repeat:no-repeat!important;background-position:left calc(100% - 30px)!important;background-size:26px 22px!important}`,
+  `[data-composer-card]{border:2px solid #2c3a22!important;border-radius:20px!important;box-shadow:4px 4px 0 rgba(28,42,18,.28),0 0 0 1px rgba(75,191,42,.35)!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18'%3E%3Cpath d='M20 0 L20 18 L0 9 Z' fill='%232c3a22'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:left calc(50% - 9px)!important;background-size:20px 18px!important}`,
   /* Placeholder: `[data-composer-placeholder]` since the Lexical composer (textarea kept for older builds) */
   `[data-composer-card] textarea::placeholder,[data-composer-card] [data-composer-placeholder]{color:${GREEN}!important;opacity:.7}`,
   /* While a turn runs the real placeholder body is swapped for cycling Ork gibberish. */
@@ -397,10 +400,18 @@ function fitMascot(orc: HTMLElement | null): void {
   orc.style.height = `${height}px`
   orc.style.left = `${left}px`
   orc.style.top = `${top}px`
-  // The lap runs from above the card's top edge to below its bottom edge, so the
-  // travel is a real swim rather than the few pixels a card-height span allows.
-  orc.style.setProperty('--waaagh-from', `${Math.round(cardBox.top - parentBox.top - height * 0.55)}px`)
-  orc.style.setProperty('--waaagh-to', `${Math.round(cardBox.top + cardBox.height - parentBox.top - height * 0.45)}px`)
+  // The lap runs around the outside of the card: down the left margin, across
+  // under it, up the right margin, back over the top. All four corners are
+  // measured, because a percentage of the containing block is meaningless here.
+  const gap = 6
+  const x0 = Math.round(cardBox.left - width - gap - parentBox.left)
+  const x1 = Math.round(cardBox.right + gap - parentBox.left)
+  const y0 = Math.round(cardBox.top - parentBox.top - height * 0.55)
+  const y1 = Math.round(cardBox.top + cardBox.height - parentBox.top - height * 0.45)
+  orc.style.setProperty('--lap-x0', `${x0}px`)
+  orc.style.setProperty('--lap-x1', `${x1}px`)
+  orc.style.setProperty('--lap-y0', `${y0}px`)
+  orc.style.setProperty('--lap-y1', `${y1}px`)
   orc.style.setProperty('--waaagh-w', `${width}px`)
   orc.style.setProperty('--waaagh-h', `${height}px`)
 }
@@ -462,6 +473,13 @@ const DROWN_MS = 6000
 const LONG_TURN_MS = 45000
 /** How long the Ork shouts after a turn lands. */
 const CHEER_MS = 2600
+/**
+ * Expressions he cycles through while lapping the bubble. "轮换各种表情": the
+ * swim is the base, and the shout sets are the variety — he paddles, waves,
+ * flails the choppa, then does dakka, and starts over.
+ */
+const MOODS = ['swim', 'a', 'swim', 'b', 'swim', 'c']
+const MOOD_MS = 6000
 /** Any transcript mutation counts as the model making progress. */
 function noteActivity(): void {
   lastActivityAt = Date.now()
@@ -563,10 +581,10 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     return () => clearInterval(id)
   }, [running])
 
-  // While a turn runs the Ork swims laps along the bubble, and how he swims is
-  // driven by how the turn is going: fast while the reply streams, slow once the
-  // transcript goes quiet, and under water when it stays quiet or just drags on.
-  // He comes back up by himself.
+  // While a turn runs the Ork laps the bubble, and both the pace and the face come
+  // from how the turn is going: fast while the reply streams, slow once the
+  // transcript goes quiet, under water when it stays quiet or just drags on, and a
+  // different expression every few seconds in between. He comes back up himself.
   React.useEffect(() => {
     if (!running) return
     runningWord = randomBellow()
@@ -577,12 +595,18 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     runStartedAt = Date.now()
     drownUntil = 0
     root.dataset.waaaghSwim = 'fast'
+    let moodIndex = 0
+    root.dataset.waaaghMood = MOODS[moodIndex] ?? 'swim'
     markRunningLabel()
     // The set keeps changing while the turn lasts, so a long answer does not
     // replay one pose, and the celebration WAAAGH when it lands uses the same set.
     const swap = setInterval(() => {
       root.dataset.waaaghSet = pickOtherSet(SHOUT_SETS, root.dataset.waaaghSet)
     }, SHOUT_SWAP_MS)
+    const mood = setInterval(() => {
+      moodIndex = (moodIndex + 1) % MOODS.length
+      root.dataset.waaaghMood = MOODS[moodIndex] ?? 'swim'
+    }, MOOD_MS)
     const swim = setInterval(() => {
       const now = Date.now()
       if (now < drownUntil) return
@@ -604,8 +628,10 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     }, 1000)
     return () => {
       clearInterval(swap)
+      clearInterval(mood)
       clearInterval(swim)
       delete root.dataset.waaaghSwim
+      delete root.dataset.waaaghMood
     }
   }, [running])
 
