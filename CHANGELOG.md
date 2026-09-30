@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.6.0 (2026-09-30)
+
+Three fixes from watching it in the app:
+
+- **Nothing overlaps the bubble any more.** The mascot was parked half over the
+  card's left edge, which read as the chat bubble being covered, and the card's
+  tail was hidden behind his head. He now stands in the page margin, clear of the
+  card (1px gap measured live), and the card is back to a normal 18px text inset.
+  The starburst moved out to the margin beside him too: above his head it landed
+  on the transcript, over the card it landed on the draft.
+- **Five action sets instead of one.** Waiting: standing and scratching his head,
+  or sitting on the ground — picked on load and rotated every 20s. Working:
+  waving both arms, flailing the choppa around, or dakka with a tiny gun — drawn
+  fresh per run, so a long session stops replaying one loop. Sets are named by the
+  `<html>` data attributes the stylesheet keys on (`data-waaagh-idle`,
+  `data-waaagh-set`), so switching one is a DOM write. 8 new frames generated.
+- **Slower.** The shout flip went .54s → 1.05s per loop (three frames a second
+  became less than one), the chant .46s → .9s, the burst pop .62s → 1.1s.
+- `scripts/mascot.py` learned to drop detached specks: the model leaves the odd
+  stray blob, and besides looking wrong it inflates the alpha bounding box so the
+  character gets scaled down and pushed off centre. Set C's frames now chain off
+  their own first frame — referenced to the unarmed base the model kept inventing
+  a different weapon (a shield, a big choppa) for every frame.
+
 ## 0.5.1 (2026-09-30)
 
 The brief for the mascot was wrong. 0.5.0 generated a berserker — red slit eyes,

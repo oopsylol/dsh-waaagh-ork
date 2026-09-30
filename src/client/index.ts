@@ -49,9 +49,12 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-general/client'
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
-import orkIdle from '../assets/ork-idle.png'
+import orkIdleA from '../assets/ork-idle-a.png'
+import orkIdleB from '../assets/ork-idle-b.png'
 import orkOpen from '../assets/ork-open.png'
-import orkShout from '../assets/ork-shout.png'
+import orkShoutA from '../assets/ork-shout-a.png'
+import orkShoutB from '../assets/ork-shout-b.png'
+import orkShoutC from '../assets/ork-shout-c.png'
 
 /** The module-table `require` the bundle factory receives from the Loader. */
 declare const require: (specifier: string) => unknown
@@ -104,14 +107,19 @@ function subscribeCustom(listener: (value: string | null) => void): () => void {
 
 // ── geometry ──────────────────────────────────────────────────────────────
 /**
- * Mascot box. Every strip frame — the waiting pair and the shout triple — is
- * 128x160, so the box has to keep that 0.8 aspect or `background-size` squashes
- * the Ork. Waiting and working share it: standing at ease, then shouting.
+ * Mascot box. Every strip frame is 128x160, so the box has to keep that 0.8
+ * aspect or `background-size` squashes the Ork. Waiting and working share it.
  */
 const ORK_W = 122
 const ORK_H = Math.round((ORK_W * 160) / 128)
-/** How far the mascot hangs outside the card, which sets the card's gutter. */
-const FLOAT_OUT = 52
+/**
+ * How far left of the card the mascot stands. He must clear the bubble entirely:
+ * parked half over the card's edge (the first cut of this) read as the bubble
+ * being overlapped, and the tail of the card was hidden behind his head. Measured
+ * from the card's left edge, so this is "one mascot box plus a gap". The `clamp`
+ * shrinks it on narrow windows, where there is less page margin to stand in.
+ */
+const FLOAT_OUT = ORK_W + 4
 /**
  * 12-point comic starburst, used as the shout bubble's `clip-path`. A rounded
  * speech bubble says "indoor voice"; a starburst says the Ork is bellowing.
@@ -128,19 +136,20 @@ function starburst(points = 12, inner = 60): string {
 
 const CSS = [
   /*
-   * The mascot floats over the left edge of the composer card — nothing is
-   * clipped or boxed in, it simply hangs outside the bubble. The card keeps a
-   * gutter so the draft never runs under him. Centring uses the box offset (not
+   * The mascot stands in the page margin beside the bubble, clear of it, and the
+   * card keeps only a normal text inset. Centring uses the box offset (not
    * `transform`) so every animation below owns `transform` outright.
    */
-  `html[data-waaagh-orc] [data-composer-card]{padding-left:${ORK_W - FLOAT_OUT + 10}px!important}`,
-  `.waaagh-orc{position:absolute;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  'html[data-waaagh-orc] [data-composer-card]{padding-left:18px!important}',
+  `.waaagh-orc{position:absolute;left:calc(-1 * clamp(60px, ${FLOAT_OUT}px, 13vw));top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
   /*
-   * Waiting: the full body standing at ease, blinking every few seconds. The two
-   * frames ship as one strip and the blink is a two-step `background-position`
-   * walk, so a head-only mascot never comes back.
+   * Waiting: two idle sets, each a two-frame strip (eyes open, eyes shut). The set
+   * is picked on load and rotated on a timer — one fixed pose forever is what the
+   * corner was before. Set A is the default so the stylesheet still works before
+   * the script has chosen.
    */
-  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkIdle}"));background-size:100% 200%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-blink 4.6s step-end infinite}`,
+  `.waaagh-orc::before{content:"";position:absolute;inset:0;background-image:var(--waaagh-face,url("${orkIdleA}"));background-size:100% 200%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-blink 4.6s step-end infinite}`,
+  `html[data-waaagh-idle=b] .waaagh-orc::before{background-image:var(--waaagh-face,url("${orkIdleB}"))}`,
   /* A custom avatar is one still image: no strip, so no blink walk. */
   '.waaagh-custom::before{background-size:contain!important;background-position:center!important;animation:none!important}',
   '@keyframes waaagh-blink{0%,92%{background-position:0 0}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
@@ -148,23 +157,26 @@ const CSS = [
      the owner renders `[data-composer-placeholder]` only while the draft is
      empty, which is the one draft signal available without touching the editor. */
   '[data-composer-card]:not(:has([data-composer-placeholder])) .waaagh-orc{filter:saturate(1.18) brightness(1.06)}',
-  /* While a turn runs the Ork chants: faster bob, sway, glow. */
-  'html[data-waaagh-running=on] .waaagh-orc{animation:waaagh-chant .46s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(75,191,42,.55)) saturate(1.25)}',
+  /* While a turn runs the Ork chants: bob, sway, glow. */
+  'html[data-waaagh-running=on] .waaagh-orc{animation:waaagh-chant .9s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(75,191,42,.55)) saturate(1.25)}',
   /* And it barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working: the Ork at ease gives way to the Ork shouting. The three frames ship
-   * as one vertical strip and the flip is a three-step `background-position`
-   * walk, so the stylesheet holds a single URL.
+   * Working: three shout sets — waving, flailing the choppa, dakka — each three
+   * frames in one strip. The set is drawn per run so a long session does not
+   * replay the same loop, and the flip is a three-step `background-position` walk
+   * at roughly three frames a second.
    */
-  `.waaagh-body{position:absolute;inset:0;display:none;background-image:url("${orkShout}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
-  'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip .54s step-end infinite}',
+  `.waaagh-body{position:absolute;inset:0;display:none;background-image:url("${orkShoutA}");background-size:100% 300%;background-position:0 0;background-repeat:no-repeat}`,
+  `html[data-waaagh-set=b] .waaagh-body{background-image:url("${orkShoutB}")}`,
+  `html[data-waaagh-set=c] .waaagh-body{background-image:url("${orkShoutC}")}`,
+  'html[data-waaagh-running=on] .waaagh-body{display:block;animation:waaagh-shout-flip 1.05s step-end infinite}',
   'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
   '@keyframes waaagh-shout-flip{0%{background-position:0 0}33.33%{background-position:0 50%}66.66%{background-position:0 100%}}',
-  /* …with a comic "WAAAGH!" starburst beside his head (not a rounded bubble, and
-     not covering the draft's first line). */
-  `.waaagh-burst{position:absolute;left:-30%;top:-26%;display:none;padding:17px 13px;font:900 15px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;color:#0f1a06;background:${GREEN};clip-path:${starburst()};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-8deg);white-space:nowrap}`,
-  'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop .62s ease-in-out infinite}',
+  /* …with a comic "WAAAGH!" starburst out in the margin beside him: above his head
+     it lands on the transcript, and over the card it lands on the draft. */
+  `.waaagh-burst{position:absolute;left:-84%;top:6%;display:none;padding:17px 13px;font:900 15px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;color:#0f1a06;background:${GREEN};clip-path:${starburst()};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-8deg);white-space:nowrap}`,
+  'html[data-waaagh-running=on] .waaagh-burst{display:block;animation:waaagh-burst-pop 1.1s ease-in-out infinite}',
   '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-7deg) scale(.88)}45%{transform:rotate(-11deg) scale(1.12)}}',
   '.waaagh-toggle{flex:none;height:28px;color:' + GREEN + ';cursor:pointer;background:0 0;border:1px solid ' + GREEN + ';border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;transition:transform .12s ease,background .12s ease}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}.waaagh-toggle:active{transform:scale(.94)}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
@@ -309,6 +321,18 @@ let markScheduled = false
  * ticks, so keying the word on the node would reshuffle the a-run every second.
  */
 let runningWord = randomBellow()
+/**
+ * Action sets. Waiting and working each have several strips; the set is redrawn
+ * per run (and the idle one rotates on a timer) so a long session never replays
+ * one loop forever. Sets are named by the `<html>` data attributes the stylesheet
+ * keys on, so picking one is just a DOM write.
+ */
+const IDLE_SETS = ['a', 'b']
+const SHOUT_SETS = ['a', 'b', 'c']
+function pickSet(sets: readonly string[]): string {
+  const picked = sets[Math.floor(Math.random() * sets.length)]
+  return picked ?? 'a'
+}
 /** Drop the running label from whichever element carried it. */
 function clearRunningLabel(): void {
   if (typeof document === 'undefined') return
@@ -412,12 +436,21 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   /** The comic burst that shows this run's bellow while the Ork shouts. */
   const burstRef = React.useRef<HTMLSpanElement | null>(null)
 
-  // Reserve the card's left gutter only while the Ork is mounted.
+  // Reserve the card's left gutter only while the Ork is mounted, and rotate the
+  // waiting set every so often: one pose on a loop for a whole session reads as a
+  // still image rather than a mascot.
   React.useEffect(() => {
     if (typeof document === 'undefined') return
-    document.documentElement.dataset.waaaghOrc = 'on'
+    const root = document.documentElement
+    root.dataset.waaaghOrc = 'on'
+    if (!root.dataset.waaaghIdle) root.dataset.waaaghIdle = pickSet(IDLE_SETS)
+    const id = setInterval(() => {
+      const others = IDLE_SETS.filter((set) => set !== root.dataset.waaaghIdle)
+      root.dataset.waaaghIdle = pickSet(others.length > 0 ? others : IDLE_SETS)
+    }, 20000)
     return () => {
-      delete document.documentElement.dataset.waaaghOrc
+      clearInterval(id)
+      delete root.dataset.waaaghOrc
     }
   }, [])
 
@@ -431,10 +464,11 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
 
   // One bellow per run: drawn when a turn starts, then reused while it streams
   // (the status node is re-created on every duration tick, so a per-node draw
-  // would reshuffle the a-run once a second).
+  // would reshuffle the a-run once a second). The action set is redrawn with it.
   React.useEffect(() => {
     if (!running) return
     runningWord = randomBellow()
+    document.documentElement.dataset.waaaghSet = pickSet(SHOUT_SETS)
     markRunningLabel()
   }, [running])
 
