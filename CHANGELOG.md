@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.9.0 (2026-09-30)
+
+The working state is a swimmer. The brief: an Ork paddling laps along the chat
+box — fast while the work is going well, and if it drags he drowns and then comes
+back up. (0.8.0's transcript Ork was the wrong reading of that and is gone.)
+
+- **Two new action sets.** `ork-swim.png`: five frames of him up to his waist in
+  water, paddling with alternating arms, splashes and ripples around him.
+  `ork-drown.png`: four frames with dizzy spiral eyes, bubbles, and the water line
+  climbing past his chin.
+- **Swim state machine**, driven by the model's own output, which is the only
+  honest progress signal a plugin has:
+  - `fast` — the transcript changed within 2.5s (i.e. the reply is streaming):
+    five frames at 0.7s, a lap of the bubble in 3.6s.
+  - `slow` — quiet for up to 9s: frames at 1.6s, a lap in 8s.
+  - `drown` — quiet for 9s, or a turn that has run 45s: he sinks under the bubble
+    with the drowning frames for 6s, then surfaces and swims again with the
+    long-turn clock restarted.
+  - Activity is counted from the transcript MutationObserver, excluding the
+    plugin's own nodes so a swimming mascot cannot keep itself awake.
+- **The shout sets earn their keep**: the turn landing plays 2.6s of WAAAGH with a
+  starburst bellow before the waiting pose returns.
+- Mascot geometry (`--waaagh-w` / `--waaagh-h`) is handed to the keyframes, so the
+  laps use the size `fitMascot` measured rather than a hard-coded one.
+- Verified live: idle → fast → slow → drown → fast across one turn, with the strip
+  walk, the travel animation and the layer swapping at each step; no console
+  errors. 9 more frames generated, 129s of API time.
+
 ## 0.8.0 (2026-09-30)
 
 Two things the desktop screenshot made obvious.

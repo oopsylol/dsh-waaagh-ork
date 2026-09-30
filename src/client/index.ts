@@ -49,12 +49,14 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-general/client'
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
+import orkDrown from '../assets/ork-drown.png'
 import orkIdleA from '../assets/ork-idle-a.png'
 import orkIdleB from '../assets/ork-idle-b.png'
 import orkOpen from '../assets/ork-open.png'
 import orkShoutA from '../assets/ork-shout-a.png'
 import orkShoutB from '../assets/ork-shout-b.png'
 import orkShoutC from '../assets/ork-shout-c.png'
+import orkSwim from '../assets/ork-swim.png'
 
 /** The module-table `require` the bundle factory receives from the Loader. */
 declare const require: (specifier: string) => unknown
@@ -168,17 +170,36 @@ const CSS = [
   /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working, in the transcript. The Ork is inserted next to the running status
-   * line — the "deep diving" row — as an in-flow flex child, so it sits in the
-   * reply and scrolls with it instead of decorating the composer. Three shout
-   * sets, five frames each, ~350ms a frame.
+   * Working: he swims laps along the bubble. `fast` while the reply is actually
+   * streaming, `slow` when it goes quiet, and `drown` when it drags — he goes
+   * under, then swims back. The travel animation owns `top`/`transform`, so it is
+   * declared after the idle rules; the strip walk lives on the inner layer.
    */
-  `.waaagh-stream-orc{flex:none;align-self:center;width:64px;height:80px;margin-right:6px;pointer-events:none;background-image:url("${orkShoutA}");background-size:100% 500%;background-position:0 0;background-repeat:no-repeat;animation:waaagh-shout-flip 1.75s step-end infinite}`,
-  `html[data-waaagh-set=b] .waaagh-stream-orc{background-image:url("${orkShoutB}")}`,
-  `html[data-waaagh-set=c] .waaagh-stream-orc{background-image:url("${orkShoutC}")}`,
-  `.waaagh-stream-burst{flex:none;align-self:center;margin-right:8px;padding:14px 11px;font:900 13px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:#0f1a06;background:${GREEN};clip-path:${starburst(10, 62)};filter:drop-shadow(1px 1px 0 #24380f);transform:rotate(-6deg);white-space:nowrap;animation:waaagh-burst-pop 1.1s ease-in-out infinite}`,
+  `.waaagh-act{position:absolute;inset:0;display:none;background-size:100% 500%;background-position:0 0;background-repeat:no-repeat}`,
+  'html[data-waaagh-running=on] .waaagh-orc::before{display:none}',
+  'html[data-waaagh-running=on] .waaagh-act{display:block}',
+  `html[data-waaagh-swim=fast] .waaagh-act{background-image:url("${orkSwim}");animation:waaagh-swim-frames .7s step-end infinite}`,
+  `html[data-waaagh-swim=slow] .waaagh-act{background-image:url("${orkSwim}");animation:waaagh-swim-frames 1.6s step-end infinite}`,
+  `html[data-waaagh-swim=drown] .waaagh-act{background-image:url("${orkDrown}");background-size:100% 400%;animation:waaagh-drown-frames 1.4s step-end infinite}`,
+  'html[data-waaagh-swim=fast] .waaagh-orc{animation:waaagh-lap 3.6s ease-in-out infinite}',
+  'html[data-waaagh-swim=slow] .waaagh-orc{animation:waaagh-lap 8s ease-in-out infinite}',
+  'html[data-waaagh-swim=drown] .waaagh-orc{animation:waaagh-sink 6s ease-in-out 1 forwards}',
+  '@keyframes waaagh-swim-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
+  '@keyframes waaagh-drown-frames{0%{background-position:0 0}25%{background-position:0 33.33%}50%{background-position:0 66.66%}75%{background-position:0 100%}}',
+  '@keyframes waaagh-lap{0%,100%{top:-6%;transform:rotate(-5deg)}50%{top:calc(100% - var(--waaagh-h,95px) + 4%);transform:rotate(5deg)}}',
+  '@keyframes waaagh-sink{0%{top:8%;opacity:1;transform:rotate(0)}50%{top:calc(100% + var(--waaagh-h,95px) * .4);opacity:.3;transform:rotate(75deg)}70%{top:calc(100% + var(--waaagh-h,95px) * .4);opacity:.3;transform:rotate(75deg)}100%{top:6%;opacity:1;transform:rotate(0)}}',
+  /*
+   * The turn finishing is worth a WAAAGH: the shout sets play for a couple of
+   * seconds when the reply lands, then the waiting pose comes back.
+   */
+  `html[data-waaagh-cheer=on] .waaagh-act{display:block;background-image:url("${orkShoutA}");background-size:100% 500%;animation:waaagh-shout-flip 1.75s step-end infinite}`,
+  `html[data-waaagh-cheer=on][data-waaagh-set=b] .waaagh-act{background-image:url("${orkShoutB}")}`,
+  `html[data-waaagh-cheer=on][data-waaagh-set=c] .waaagh-act{background-image:url("${orkShoutC}")}`,
+  'html[data-waaagh-cheer=on] .waaagh-orc::before{display:none}',
+  /* …with this run's bellow in a starburst beside him. */
+  `html[data-waaagh-cheer=on] .waaagh-orc::after{content:var(--waaagh-bellow,"WAAAGH!");position:absolute;left:-84%;top:2%;padding:15px 12px;font:900 13px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.05em;color:#0f1a06;background:${GREEN};clip-path:${starburst(10, 62)};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-7deg);white-space:nowrap;animation:waaagh-burst-pop 1.1s ease-in-out infinite}`,
+  '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-6deg) scale(.92)}45%{transform:rotate(-9deg) scale(1.08)}}',
   '@keyframes waaagh-shout-flip{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
-  '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-6deg) scale(.94)}45%{transform:rotate(-9deg) scale(1.06)}}',
   '.waaagh-toggle{flex:none;height:28px;color:' + GREEN + ';cursor:pointer;background:0 0;border:1px solid ' + GREEN + ';border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;transition:transform .12s ease,background .12s ease}.waaagh-toggle:hover{background:rgba(75,191,42,.14)}.waaagh-toggle:active{transform:scale(.94)}',
   '.waaagh-settings{display:flex;flex-direction:column;gap:6px}',
   '.waaagh-settings-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
@@ -269,7 +290,7 @@ const CSS = [
   '@keyframes waaagh-shout{from{transform:translateY(0) rotate(-1.4deg)}to{transform:translateY(-2px) rotate(1.4deg)}}',
   '@keyframes waaagh-dakka{0%{transform:scale(.55) rotate(-16deg);filter:brightness(2.4)}55%{transform:scale(1.2) rotate(9deg)}100%{transform:scale(1) rotate(0);filter:none}}',
   /* one switch turns the whole menagerie off */
-  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::before,html[data-waaagh-send] .waaagh-orc,.waaagh-stream-orc,.waaagh-stream-burst,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
+  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::before,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-act,html[data-waaagh-cheer=on] .waaagh-act,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
 ].join('\n')
 
 const TAG_ID = 'dsh-waaagh-ork/styles'
@@ -365,6 +386,9 @@ function fitMascot(orc: HTMLElement | null): void {
   orc.style.height = `${height}px`
   orc.style.left = `-${width + 2}px`
   orc.style.top = `calc(50% - ${Math.round(height / 2)}px)`
+  // The swim laps are expressed against his own box, so hand it to the keyframes.
+  orc.style.setProperty('--waaagh-w', `${width}px`)
+  orc.style.setProperty('--waaagh-h', `${height}px`)
 }
 /** Drop the running label from whichever element carried it. */
 function clearRunningLabel(): void {
@@ -407,66 +431,33 @@ function findRunningLabel(): Element | null {
   const rows = document.querySelectorAll('[data-chat-flow-kind=turn-process] [data-turn-process]')
   return rows[rows.length - 1]?.querySelector(':scope > span') ?? null
 }
-/** Short bellow for the transcript bubble (the running label keeps the long one). */
+/** Short bellow for the celebration bubble. */
 let burstWord = randomBellow(2, 6)
-const STREAM_ORC_CLASS = 'waaagh-stream-orc'
-const STREAM_BURST_CLASS = 'waaagh-stream-burst'
-/** Drop the transcript Ork when the turn ends. */
-function clearStreamOrc(): void {
-  if (typeof document === 'undefined') return
-  for (const node of document.querySelectorAll(`.${STREAM_ORC_CLASS},.${STREAM_BURST_CLASS}`)) node.remove()
-}
 /**
- * Put the working Ork in the transcript, immediately before the running status
- * line, as an in-flow flex child.
- *
- * The composer is where you type; the Ork is supposed to be following the model's
- * reply, and the "深度求索中，用时 …" row is the one element that exists exactly as
- * long as the model is answering. Inserting in-flow (rather than floating it over
- * the page) means the row makes room for it — nothing gets clipped by the chat
- * column, which is what happened when the mascot hung off the composer. The row is
- * re-rendered as the duration ticks, so this is re-asserted from the same observer
- * pass that tags the running label.
+ * Swim bookkeeping. The model's own output is the only honest progress signal the
+ * plugin has: streaming text mutates the transcript, so "is he still working?"
+ * becomes "has the transcript changed lately?". Quiet for a while or a turn that
+ * just runs long and the Ork goes under, then swims back up.
  */
-function ensureStreamOrc(): void {
-  if (typeof document === 'undefined') return
-  if (!runningNow) {
-    clearStreamOrc()
-    return
-  }
-  const label = findRunningLabel()
-  const row = label === null ? null : (label.closest('[data-chat-running]') ?? label.parentElement)
-  if (row === null) return
-  const orks = document.querySelectorAll(`.${STREAM_ORC_CLASS}`)
-  let orc = orks[0] as HTMLElement | undefined
-  if (orc === undefined) {
-    orc = document.createElement('span')
-    orc.className = STREAM_ORC_CLASS
-    orc.setAttribute('aria-hidden', 'true')
-  }
-  for (let index = 1; index < orks.length; index += 1) orks[index]?.remove()
-  const siblings = document.querySelectorAll(`.${STREAM_BURST_CLASS}`)
-  let burst = siblings[0] as HTMLElement | undefined
-  if (burst === undefined) {
-    burst = document.createElement('span')
-    burst.className = STREAM_BURST_CLASS
-    burst.setAttribute('aria-hidden', 'true')
-  }
-  for (let index = 1; index < siblings.length; index += 1) siblings[index]?.remove()
-  burst.textContent = burstWord
-  if (orc.parentElement !== row) {
-    row.insertBefore(burst, row.firstChild)
-    row.insertBefore(orc, burst)
-  }
+let lastActivityAt = 0
+let runStartedAt = 0
+let drownUntil = 0
+const QUIET_FAST_MS = 2500
+const QUIET_SLOW_MS = 9000
+const DROWN_MS = 6000
+const LONG_TURN_MS = 45000
+/** How long the Ork shouts after a turn lands. */
+const CHEER_MS = 2600
+/** Any transcript mutation counts as the model making progress. */
+function noteActivity(): void {
+  lastActivityAt = Date.now()
 }
 /**
- * Mask the running label with the current run's bellow, and keep the transcript
- * Ork beside it.
+ * Mask the running label with the current run's bellow.
  */
 function markRunningLabel(): void {
   if (typeof document === 'undefined') return
   clearRunningLabel()
-  ensureStreamOrc()
   if (!runningNow) return
   const label = findRunningLabel()
   if (label === null) return
@@ -558,25 +549,69 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     return () => clearInterval(id)
   }, [running])
 
-  // One bellow per run: drawn when a turn starts, then reused while it streams
-  // (the status node is re-created on every duration tick, so a per-node draw
-  // would reshuffle the a-run once a second). The action set is redrawn with it,
-  // and swapped again every few seconds for as long as the turn keeps going — the
-  // Ork is supposed to be following the model's reply, not looping one pose.
+  // While a turn runs the Ork swims laps along the bubble, and how he swims is
+  // driven by how the turn is going: fast while the reply streams, slow once the
+  // transcript goes quiet, and under water when it stays quiet or just drags on.
+  // He comes back up by himself.
   React.useEffect(() => {
     if (!running) return
     runningWord = randomBellow()
     burstWord = randomBellow(2, 6)
     const root = document.documentElement
     root.dataset.waaaghSet = pickSet(SHOUT_SETS)
+    lastActivityAt = Date.now()
+    runStartedAt = Date.now()
+    drownUntil = 0
+    root.dataset.waaaghSwim = 'fast'
     markRunningLabel()
-    const id = setInterval(() => {
+    // The set keeps changing while the turn lasts, so a long answer does not
+    // replay one pose, and the celebration WAAAGH when it lands uses the same set.
+    const swap = setInterval(() => {
       root.dataset.waaaghSet = pickOtherSet(SHOUT_SETS, root.dataset.waaaghSet)
-      runningWord = randomBellow()
-      burstWord = randomBellow(2, 6)
-      markRunningLabel()
     }, SHOUT_SWAP_MS)
-    return () => clearInterval(id)
+    const swim = setInterval(() => {
+      const now = Date.now()
+      if (now < drownUntil) return
+      if (drownUntil !== 0) {
+        // Surfaced: back to swimming, with the long-turn clock restarted.
+        drownUntil = 0
+        runStartedAt = now
+        lastActivityAt = now
+        root.dataset.waaaghSwim = 'fast'
+        return
+      }
+      const quiet = now - lastActivityAt
+      if (quiet > QUIET_SLOW_MS || now - runStartedAt > LONG_TURN_MS) {
+        drownUntil = now + DROWN_MS
+        root.dataset.waaaghSwim = 'drown'
+        return
+      }
+      root.dataset.waaaghSwim = quiet < QUIET_FAST_MS ? 'fast' : 'slow'
+    }, 1000)
+    return () => {
+      clearInterval(swap)
+      clearInterval(swim)
+      delete root.dataset.waaaghSwim
+    }
+  }, [running])
+
+  // The turn landing is worth a WAAAGH: a couple of seconds of shouting, then the
+  // waiting pose.
+  React.useEffect(() => {
+    if (running || typeof document === 'undefined') return
+    if (runStartedAt === 0) return
+    const root = document.documentElement
+    root.dataset.waaaghCheer = 'on'
+    root.style.setProperty('--waaagh-bellow', JSON.stringify(burstWord))
+    const id = setTimeout(() => {
+      delete root.dataset.waaaghCheer
+      root.style.removeProperty('--waaagh-bellow')
+    }, CHEER_MS)
+    return () => {
+      clearTimeout(id)
+      delete root.dataset.waaaghCheer
+      root.style.removeProperty('--waaagh-bellow')
+    }
   }, [running])
 
   // While running: flag the document, swap the composer placeholder for a
@@ -597,26 +632,30 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
       clearRunningLabel()
-      clearStreamOrc()
     }
     return () => {
       runningNow = false
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
       clearRunningLabel()
-      clearStreamOrc()
     }
   }, [running, wordIndex])
 
   const isCustom = sprite !== null
-  return React.createElement('div', {
-    ref: orcRef,
-    className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
-    // The custom avatar feeds the idle head layer's variable.
-    style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
-    title: 'WAAAGH',
-    'aria-hidden': true
-  })
+  return React.createElement(
+    'div',
+    {
+      ref: orcRef,
+      className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
+      // The custom avatar feeds the idle head layer's variable.
+      style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
+      title: 'WAAAGH',
+      'aria-hidden': true
+    },
+    // Working: the swim / drown / celebration strip. Hidden while waiting, where
+    // the idle pose carries the mascot.
+    React.createElement('span', { className: 'waaagh-act' })
+  )
 }
 
 // ── WaaaghToggle (conversation.input.right): output-mask reveal ──────────────
@@ -782,6 +821,10 @@ export function apply(ctx: Context): void {
     for (const el of document.querySelectorAll(FLOW_ROWS)) orkify(el)
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
+        // The model's own output is how the swim state knows work is progressing.
+        // Our own nodes are excluded so a swimming mascot cannot keep itself awake.
+        const target = mutation.target
+        if (!(target instanceof Element) || target.closest('.waaagh-orc') === null) noteActivity()
         for (const node of mutation.addedNodes) {
           if (node.nodeType === 1) scan(node as Element)
         }
@@ -789,7 +832,7 @@ export function apply(ctx: Context): void {
       // The running label is re-rendered as the turn streams; re-locate it.
       scheduleMarkRunningLabel()
     })
-    observer.observe(document.body, { childList: true, subtree: true })
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true })
     markRunningLabel()
     return () => observer.disconnect()
   })

@@ -49,6 +49,21 @@ STYLE = (
     "手里一把看起来很钝的小砍刀。整体构图：全身、正面、居中、纯色品红背景（#CC1166），"
     "背景必须干净无阴影（阴影也必须是同一品红色）、无地面、无文字。"
 )
+# While a turn runs he paddles laps around the composer bubble, so these frames
+# keep the same character but put him up to his waist in water.
+SWIM = (
+    "16-bit 像素风，同一个可爱的兽人小子，现在正在水里游泳：只有上半身和脑袋露出水面，"
+    "身体周围有一圈白色水花和波纹（水花也必须是像素风格），"
+    "两只小短手像划水一样一上一下地划，嘴巴张着傻叫、表情开心，"
+    "粗黑描边、平涂色块、纯色品红背景（#CC1166），居中，无文字。"
+)
+# …and when the turn drags he goes under.
+DROWN = (
+    "16-bit 像素风，同一个可爱的兽人小子，现在快要溺水了：水面没过身体，"
+    "他举着两只小短手在水面扑腾，眼睛变成晕眩的圈圈、嘴巴张着吐气泡，一串小气泡往上冒，"
+    "表情又傻又慌（可爱而不是恐怖），像素风格的水花与波纹，"
+    "粗黑描边、平涂色块、纯色品红背景（#CC1166），居中，无文字。"
+)
 PROMPTS = {
     # --- shout set A: waving both arms and hopping (the first set, kept as base)
     "shout-a2": (
@@ -83,6 +98,17 @@ PROMPTS = {
     "眯起一只眼睛傻笑。",
     "shout-c5": STYLE + "继续用参考图里的那把枪，姿势改为：两只手一上一下地端着枪乱扫，身体被后坐力推得歪向一边，"
     "嘴巴张到最大傻叫，舌头伸出来。",
+    # --- swim set: paddling laps around the composer bubble while the model works
+    "swim1": SWIM + "姿势：左手抬高划水、右手往下压，身体微微侧过来，水花在两边炸开。",
+    "swim2": SWIM + "姿势：两只手一起向前划，水花最大，脑袋往前探，嘴巴张到最大傻叫。",
+    "swim3": SWIM + "姿势：右手抬高划水、左手往下压，和参考图方向相反，身体微微侧过来。",
+    "swim4": SWIM + "姿势：两只手一起向后划，身体前倾，水花都在身后，舌头伸出来。",
+    "swim5": SWIM + "姿势：换气——脑袋高高抬出水面，两只手在水面下划，身体上下起伏，眼睛笑成弧线。",
+    # --- drown set: he sinks when the turn drags, then comes back up
+    "drown1": DROWN + "水位：没到胸口，嘴巴张着吐出一串气泡，两只手在水面乱拍。",
+    "drown2": DROWN + "水位：没到下巴，眼睛变成晕眩的圈圈，气泡一串一串往上冒。",
+    "drown3": DROWN + "水位：只剩头顶和一撮呆毛露在外面，两只手在水面上扑腾。",
+    "drown4": DROWN + "水位：整个人沉下去了，水面上只剩几个气泡和一只举着的小手。",
     # --- idle set A: standing, scratching his head. Three frames: open, half
     # shut, shut, so the blink is a roll rather than a flicker.
     "idle-a1": STYLE + "姿势改为：站在原地挠着后脑勺傻笑，另一只手扶着插在地上的小砍刀，嘴巴咧开露出两颗小獠牙，"
@@ -124,17 +150,27 @@ REFERENCES = {
     "idle-b1": "shout-a2",
     "idle-b2": "idle-b1",
     "idle-b3": "idle-b1",
+    "swim1": "shout-a2",
+    "swim2": "swim1",
+    "swim3": "swim1",
+    "swim4": "swim2",
+    "swim5": "swim2",
+    "drown1": "shout-a2",
+    "drown2": "drown1",
+    "drown3": "drown2",
+    "drown4": "drown3",
 }
-# Idle strips are three frames (open, half shut, shut) and shout strips are five,
-# so each state walks its frames with one pair of CSS animations and only the
-# image changes between sets. Five frames is the difference between a flipbook and
-# a flicker: at three the loop read as "changing too fast".
+# Idle strips are three frames (open, half shut, shut), shout and swim strips are
+# five, the drown strip is four, so each state walks its frames with one CSS
+# animation and only the image changes between sets.
 STRIPS = {
     "ork-idle-a.png": ["idle-a1", "idle-a2", "idle-a3"],
     "ork-idle-b.png": ["idle-b1", "idle-b2", "idle-b3"],
     "ork-shout-a.png": ["shout-a1", "shout-a2", "shout-a3", "shout-a4", "shout-a5"],
     "ork-shout-b.png": ["shout-b1", "shout-b2", "shout-b3", "shout-b4", "shout-b5"],
     "ork-shout-c.png": ["shout-c1", "shout-c2", "shout-c3", "shout-c4", "shout-c5"],
+    "ork-swim.png": ["swim1", "swim2", "swim3", "swim4", "swim5"],
+    "ork-drown.png": ["drown1", "drown2", "drown3", "drown4"]
 }
 
 

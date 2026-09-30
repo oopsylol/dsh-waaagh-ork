@@ -10,14 +10,16 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 const assets = join(fileURLToPath(new URL('..', import.meta.url)), 'src', 'assets')
-/** file → [width, height]. Idle strips are three frames (open, half, shut), shout strips five. */
+/** file → [width, height]. Idle 3 frames, drown 4, shout and swim 5. */
 const EXPECTED = [
   ['ork-open.png', 144, 144],
   ['ork-idle-a.png', 128, 160 * 3],
   ['ork-idle-b.png', 128, 160 * 3],
   ['ork-shout-a.png', 128, 160 * 5],
   ['ork-shout-b.png', 128, 160 * 5],
-  ['ork-shout-c.png', 128, 160 * 5]
+  ['ork-shout-c.png', 128, 160 * 5],
+  ['ork-swim.png', 128, 160 * 5],
+  ['ork-drown.png', 128, 160 * 4]
 ]
 
 let failed = false
