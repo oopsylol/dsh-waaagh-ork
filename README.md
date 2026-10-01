@@ -12,6 +12,10 @@ WAAAGH! —— 给 DSH 加一个绿皮兽人，把写代码变成兽人式咆哮
 
 ![整体效果：过程行图标换成绿皮，助手输出被换成绿色 Waaaaaaagh（点一下看原文）](docs/look.png)
 
+插件自身（插件列表卡片 / 详情页）的图标由包清单的 **`icon` 字段**声明，内容是同一张奥尔克大头（`mascot.py --icon` 同时写出 PNG 和它内嵌的 SVG）：
+
+![插件列表里的图标](docs/plugin-icon.png)
+
 | 等待时 | 干活时 |
 | --- | --- |
 | ![等待：一屁股坐在地上挠肚子](docs/waiting.png) | ![干活：蹲在笔记本前拼命敲键盘、甩汗、张嘴吼](docs/working.png) |
@@ -148,7 +152,8 @@ python scripts/mascot.py --raw <新目录> --rebase <旧目录>         # 只改
 | `src/host/index.ts` | Node 半：有意的空实现，只为让 Loader 条目能激活 |
 | `src/assets/*.png` | 精灵图（两条 AI 雪碧图 + 裁出来的图标），构建时内联成 data URL |
 | `scripts/mascot.py` | AI 生成吉祥物：调火山方舟 doubao-seedream、抠品红背景、拼雪碧图、`--icon` 生成 16px 图标 |
-| `scripts/check-assets.mjs` | 校验三张图的尺寸/帧数契约 |
+| `assets/icon.svg` | 插件管理器用的图标（内嵌 144×144 PNG），由 `mascot.py --icon` 同步生成 |
+| `scripts/check-assets.mjs` | 校验三张图的尺寸契约 + 图标字段与内嵌 PNG 一致 |
 | `scripts/smoke.mjs` | 对运行中的实例做行为回归（切换、草稿不变、零报错） |
 | `scripts/build.mjs` | esbuild 构建：host 出 ESM，浏览器半出「懒 CJS 工厂注册」包 |
 | `lib/` | 构建产物，`lib/client.js` 由 `dsh-client-modules` 通过 `/plugins` 提供给页面 |

@@ -1,6 +1,6 @@
 {
   "name": "dsh-waaagh-ork",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "description": "WAAAGH! — a green Ork mascot plugin for DSH Web and DSH Desktop: an ink line-art Ork who sits beside the composer while waiting and hammers a laptop while the model works, green Ork skin + a comic speech bubble, the model's thinking and output masked as green \"Waaaaaaagh!!!\" (click to reveal the original), and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator. Never touches the composer draft: what you type is what gets sent.",
   "engines": {
     "node": ">=20"
@@ -11,6 +11,7 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
+  "icon": "./assets/icon.svg",
   "main": "lib/index.js",
   "exports": {
     ".": {
@@ -22,6 +23,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets",
     "lib/index.js",
     "lib/client.js",
     "cordis.patch.yml",

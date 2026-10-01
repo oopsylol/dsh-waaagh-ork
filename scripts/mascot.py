@@ -41,6 +41,8 @@ from PIL import Image, ImageFilter
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "src" / "assets"
+# The plugin-manager icon: DSH reads the package manifest's top-level `icon` field.
+PLUGIN_ICON = ROOT / "assets" / "icon.svg"
 FRAME_W, FRAME_H = 128, 160
 PALETTE_COLORS = 24
 
@@ -353,6 +355,32 @@ def build_icon(raw: pathlib.Path) -> None:
     target = ASSETS / "ork-open.png"
     icon.quantize(colors=PALETTE_COLORS, method=Image.FASTOCTREE).save(target, optimize=True)
     print(f"{target.relative_to(ROOT)}: {icon.width}x{icon.height}, {target.stat().st_size} bytes")
+    write_plugin_icon(target)
+
+
+def write_plugin_icon(png: pathlib.Path) -> None:
+    """Write `assets/icon.svg`, the plugin-manager icon, from the 144x144 PNG.
+
+    DSH's plugin manager shows a card icon declared by the package manifest's top-level
+    `icon` field (that is how the other plugins do it). It embeds the art we already
+    have — the convention is "the original illustration, not redrawn" — so the head is
+    base64'd into a single `<image>`, which keeps one source of truth and stays in sync
+    with the PNG because this runs at the end of `--icon`.
+    """
+    encoded = base64.b64encode(png.read_bytes()).decode("ascii")
+    inset = 10
+    side = ICON_SIZE * 2 - inset * 2
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{ICON_SIZE * 2}" height="{ICON_SIZE * 2}" '
+        f'viewBox="0 0 {ICON_SIZE * 2} {ICON_SIZE * 2}" role="img" aria-label="WAAAGH Ork">\n'
+        f'  <image x="{inset}" y="{inset}" width="{side}" height="{side}" '
+        f'image-rendering="optimizeQuality" href="data:image/png;base64,{encoded}"/>\n'
+        "</svg>\n"
+    )
+    target = PLUGIN_ICON
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(svg, encoding="utf-8")
+    print(f"{target.relative_to(ROOT)}: {target.stat().st_size} bytes")
 
 
 def main() -> None:

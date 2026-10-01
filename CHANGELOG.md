@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.18.1 (2026-09-30)
+
+The plugin had no icon in DSH's plugin list — it showed the manager's generic node
+glyph instead of an Ork.
+
+- **Declared `icon` in the manifest** (`"./assets/icon.svg"`), which is the convention
+  the other plugins use: DSH reads it and shows the art on the plugin's card, its
+  detail page and the component rows. That is why nothing appeared before — the field
+  was simply absent, not the file.
+- **`assets/icon.svg` embeds the 144x144 head** that `mascot.py --icon` already builds,
+  as a single base64 `<image>` (the same approach the whale-pet plugin documents: the
+  original illustration, not redrawn). One generator call writes both the PNG and the
+  SVG, so they cannot drift; `assets` is now in the published `files` list.
+- **`check-assets` checks the pair**: the manifest declares the field, the `files` list
+  ships `assets`, and the base64 payload inside the SVG decodes to a 144x144 PNG.
+- Verified by rendering the SVG in a browser at the three sizes it is used at — 40px
+  (card), 88px (detail), 160px — all three read as an Ork head. README shows the render.
+
 ## 0.18.0 (2026-09-30)
 
 The Ark balance came back, so the two pieces 0.17.0 had to leave out are in.
