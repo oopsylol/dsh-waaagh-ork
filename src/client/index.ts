@@ -358,21 +358,32 @@ let runningWord = randomBellow()
 const IDLE_MOODS = ['idle-a', 'idle-b', 'swim', 'drown', 'wave', 'choppa', 'dakka']
 const CHEER_MOODS = ['wave', 'choppa', 'dakka']
 /**
- * Waiting poses arrive in runs of random length — 11111111, 2222, 222, 333333, 444 —
- * rather than on a fixed cadence: each pick holds for a random stretch and may well
- * be the same pose again. A fixed rotation read as a slideshow, and "2222, 222"
- * (the same pose twice with different lengths) is what makes the corner feel
- * unhurried.
+ * Waiting poses play as a run sheet, not as a lottery: the list is walked one step
+ * at a time and every step holds for a random stretch — 11111111, 2222, 222,
+ * 333333, 444. Two details matter. The walk only ever advances by one (or none), so
+ * no pose is skipped or jumped back to and the order stays legible; and about a
+ * third of the steps replay the current pose, which is what produces "2222, 222" —
+ * the same face twice with different lengths. Picking freely at random instead gave
+ * 4 → 1 → 4 jumps and left poses unseen for minutes.
  */
-const IDLE_MOOD_MIN_MS = 22000
-const IDLE_MOOD_MAX_MS = 70000
+const IDLE_HOLD_MIN_MS = 9000
+const IDLE_HOLD_MAX_MS = 30000
+const IDLE_REPEAT_CHANCE = 0.32
+let idleMoodIndex = -1
+/** Next waiting pose: advance one step, or stay for another run of the same one. */
+function nextIdleMood(): string {
+  if (idleMoodIndex < 0 || Math.random() > IDLE_REPEAT_CHANCE) {
+    idleMoodIndex = idleMoodIndex < 0 ? 0 : (idleMoodIndex + 1) % IDLE_MOODS.length
+  }
+  return IDLE_MOODS[idleMoodIndex] ?? 'idle-a'
+}
 let idleMoodTimer = 0
 /**
  * Set the waiting pose now and book the next change.
  *
  * One shared timer, and it stands down while a turn runs: the work state owns the
  * mood then, and two writers made the strip flicker between moods mid-turn.
- * @param delayMs - how long to wait before picking again.
+ * @param delayMs - how long to wait before drawing the next pose.
  */
 function scheduleIdleMood(delayMs: number): void {
   if (typeof document === 'undefined') return
@@ -382,8 +393,8 @@ function scheduleIdleMood(delayMs: number): void {
       scheduleIdleMood(4000)
       return
     }
-    document.documentElement.dataset.waaaghMood = pickSet(IDLE_MOODS)
-    scheduleIdleMood(IDLE_MOOD_MIN_MS + Math.random() * (IDLE_MOOD_MAX_MS - IDLE_MOOD_MIN_MS))
+    document.documentElement.dataset.waaaghMood = nextIdleMood()
+    scheduleIdleMood(IDLE_HOLD_MIN_MS + Math.random() * (IDLE_HOLD_MAX_MS - IDLE_HOLD_MIN_MS))
   }, delayMs)
 }
 function stopIdleMood(): void {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.3 (2026-09-30)
+
+0.11.2 read "11111111, 2222, 222, 333333, 444" as "random pose, random length" and
+picked the pose freely — which jumps around (4 → 1 → 4) and can leave a pose unseen
+for minutes. The labels in that pattern are *in order*: 1, 2, 2, 3, 4.
+
+- **Waiting is a run sheet now, not a lottery.** The list is walked one step at a
+  time — advance by one, or stay on the current pose for another run — so the order
+  reads 1, 2, 3, 4 … with no skips and no jumping back, and every pose comes round.
+- **Every step holds for a random 9-30s** (was a random 22-70s pick), and about a
+  third of the steps replay the current pose, which is what produces "2222, 222" —
+  the same face twice at different lengths.
+- Measured over four minutes: `idle-a:27s idle-b:27s swim:12s drown:37s wave:25s
+  choppa:39s dakka:17s idle-a:21s idle-b:33s` — in order, uneven, no console errors.
+
 ## 0.11.2 (2026-09-30)
 
 Waiting was still on a schedule: one pose every 28 seconds, round and round. The ask
