@@ -174,13 +174,11 @@ const CSS = [
   '.waaagh-settings-row button{height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}',
   '.waaagh-settings-hint{font-size:12px;color:var(--dsw-alias-label-caption)}',
   /*
-   * Comic speech bubble: a chunky ink outline with a hard offset shadow, and a
-   * tail on the left edge pointing at the Ork (kept near the card's middle, where
-   * his head is). The tail is an inline SVG triangle: the conic-gradient wedge it
-   * replaced resolved `calc(100% - 30px)` against the box *minus* the image, so it
-   * landed mid-card and rendered as a black block instead of a point.
+   * Comic speech bubble: a chunky ink outline and a hard offset shadow. The tail
+   * that used to sit on the left edge is gone — the owner asked for it to be hidden,
+   * and a bubble with a border and a shadow reads as a bubble without one.
    */
-  `[data-composer-card]{border:2px solid #2c3a22!important;border-radius:20px!important;box-shadow:4px 4px 0 rgba(28,42,18,.28),0 0 0 1px rgba(75,191,42,.35)!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18'%3E%3Cpath d='M20 0 L20 18 L0 9 Z' fill='%232c3a22'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:left calc(50% - 9px)!important;background-size:20px 18px!important}`,
+  `[data-composer-card]{border:2px solid #2c3a22!important;border-radius:20px!important;box-shadow:4px 4px 0 rgba(28,42,18,.28),0 0 0 1px rgba(75,191,42,.35)!important}`,
   /* Placeholder: `[data-composer-placeholder]` since the Lexical composer (textarea kept for older builds) */
   `[data-composer-card] textarea::placeholder,[data-composer-card] [data-composer-placeholder]{color:${GREEN}!important;opacity:.7}`,
   /* While a turn runs the real placeholder body is swapped for cycling Ork gibberish. */

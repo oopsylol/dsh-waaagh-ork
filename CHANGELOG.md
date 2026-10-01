@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.1 (2026-09-30)
+
+- **The bubble's tail is gone.** The dark triangle on the card's left edge was the
+  speech-bubble tail added in 0.6.0 (an SVG triangle by the end, a conic-gradient
+  block before that). Hidden on request; the border and the hard offset shadow carry
+  the comic look on their own. Removing it also drops the `background-image` override
+  the card carried, so nothing of the owner's own card background is overwritten.
+- Verified live: the card reports `background-image: none` with its border, radius
+  and shadow intact, and the mascot sits beside it as before.
+
 ## 0.16.0 (2026-09-30)
 
 Two animations, as asked: sitting while waiting, and hammering a keyboard while
