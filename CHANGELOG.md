@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.16.0 (2026-09-30)
+
+Two animations, as asked: sitting while waiting, and hammering a keyboard while
+working.
+
+- **Waiting is one drawing** — sitting on the ground, scratching his belly, three
+  frames walking as an eyelid roll. The pose rotation is gone, which also settles the
+  "switching too fast" complaint for good: there is nothing left to switch.
+- **Working is new**: six frames of him hunched over a laptop, both hands hammering,
+  head down at the screen, mouth wide open yelling, sweat flying. Generated from the
+  sitting pose so the Ork at the desk is the same Ork, then chained off its own first
+  frame so the laptop and desk stay the same object frame to frame.
+- **A targeted edit pass cleaned it up**: the model painted the yell as black letters
+  ("AAA", "GH") floating over his head and left the laptop screens black in half the
+  frames. Re-prompting the whole set did it again — forbidding text in a prompt that
+  also asks for a shout invites sound-effect letters — so the frames were edited in
+  place instead ("erase every letter, put sweat drops there instead, keep the laptop
+  screen white"), which worked on the first try.
+- **Deleted**: `ork-idle-a`, `ork-shout-a/b/c`, `ork-swim`, `ork-drown`, the standing
+  idle, the swim progress state machine, the pose run sheet, the celebration sets.
+  Two strips instead of seven; assets 245KB → 102KB, bundle 360KB → 150KB.
+- Verified live: waiting reports the 3-frame strip at 5s with the blink, working
+  reports the 6-frame strip at 0.7s, his position is stable through a whole turn
+  (1px), no console errors.
+
 ## 0.15.0 (2026-09-30)
 
 He swims on the spot now: the working animation no longer travels anywhere.

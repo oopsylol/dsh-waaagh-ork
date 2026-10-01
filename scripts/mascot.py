@@ -68,119 +68,51 @@ FRAMING = (
     "边框或文字。"
 )
 STYLE = LINE + CHARACTER + FRAMING
-# While a turn runs he paddles laps around the composer bubble.
-SWIM = (
-    LINE + CHARACTER + "现在他正在水里游泳：只有上半身和脑袋露出水面，身体周围有一圈手绘的水花和波纹，"
-    "两只小短手像划水一样一上一下地划，嘴巴张着傻叫、表情开心。" + FRAMING
-)
-# …and when the turn drags he goes under.
-DROWN = (
-    LINE + CHARACTER + "现在他快要溺水了：水面没过身体，他举着两只小短手在水面扑腾，"
-    "眼睛变成晕眩的圈圈、嘴巴张着吐气泡，一串小气泡往上冒，表情又傻又慌（可爱而不是恐怖），"
-    "水花与波纹也用线条画。" + FRAMING
+# …and while a turn runs he hammers a keyboard, sweating and yelling.
+WORK = (
+    LINE + CHARACTER + "现在他正坐在电脑前拼命干活：面前是一台简单的手绘小电脑——"
+    "屏幕上画着几行潦草的代码线，下面是一只小键盘，屏幕和键盘都只用线条画；"
+    "他两只手都按在键盘上疯狂敲打，身体前倾、脑袋凑近屏幕，"
+    "嘴巴张得很大在喊 WAAAGH，眉毛狠狠皱起来，额头和脑袋旁边飞出几滴汗珠（汗珠也用线条画）。"
+    "画面里**不要出现任何文字、字母、数字、图标或符号**——不要对话框、不要音效字、不要火花碎片。"
+    + FRAMING
 )
 PROMPTS = {
-    # --- shout set A: waving both arms and hopping (the first set, kept as base)
-    "shout-a2": STYLE + "姿势：正在开心地大声喊叫，两只小短手举起来乱挥，嘴巴张得很大、舌头伸出来，"
-    "一只眼珠歪向旁边（斗鸡眼），表情兴奋开心而不是愤怒。",
-    "shout-a1": STYLE + "姿势改为：两只小短手举起来挥舞，身体开心地向后仰，嘴巴张到最大在傻叫，舌头伸出来，"
-    "眼睛睁得大大的、眼珠还是歪的，像在兴奋地喊口号。",
-    "shout-a3": STYLE + "姿势改为：双拳举过头顶、双脚离地小跳一下，嘴巴张到最大傻叫，舌头伸出来，"
-    "眼睛亮晶晶地往上看着，一副开心到不行的样子。",
-    "shout-a4": STYLE + "姿势改为：两只小短手向身体两侧张开、掌心朝前，脑袋歪向一边，嘴巴张大傻叫，舌头伸出来。",
-    "shout-a5": STYLE + "姿势改为：身体扭向一侧、一只脚抬起来像在蹦跶，两只手一只高一只低地乱挥，"
-    "眼睛笑成一条线，开心得不行。",
-    # --- shout set B: flailing the blunt little choppa around
-    "shout-b1": STYLE + "姿势改为：双手把小砍刀举过头顶正要往下挥，身体向后仰，嘴巴张大傻叫，舌头伸出来。",
-    "shout-b2": STYLE + "姿势改为：小砍刀挥到身体正前方，身体跟着向前弯，一只脚抬起来，嘴巴张得大大的傻叫。",
-    "shout-b3": STYLE + "姿势改为：小砍刀甩到身体另一侧，人被自己带得歪向一边，眼睛笑成一条线，舌头伸出来。",
-    "shout-b4": STYLE + "姿势改为：小砍刀垂在身体前面快要碰到地面，人被惯性带着弯下腰，嘴巴张得大大的傻叫。",
-    "shout-b5": STYLE + "姿势改为：小砍刀甩到肩膀后面，身体跟着转向另一边，眼睛笑成一条线，舌头伸出来。",
-    # --- shout set C: dakka. Chained c2/c3 off c1, not off the base: referenced to
-    # the unarmed base the model kept inventing a different weapon for each frame.
-    "shout-c1": STYLE + "姿势改为：双手端着一把又小又简陋的哒哒枪往前乱开火（枪口喷出小小的火花），"
-    "后坐力把他顶得往后仰，嘴巴张到最大傻叫，舌头伸出来。手里拿的必须是枪，不要盾牌、不要大刀。",
-    "shout-c2": STYLE + "继续用参考图里的那把枪，姿势改为：一边开火一边被后坐力顶得双脚离地往后跳，"
-    "闭起一只眼睛瞄准，嘴巴咧开傻笑。",
-    "shout-c3": STYLE + "继续用参考图里的那把枪，姿势改为：把小枪举到头顶乱射，开心得眼睛弯成弧线，"
-    "嘴巴张到最大傻叫，舌头伸出来。",
-    "shout-c4": STYLE + "继续用参考图里的那把枪，姿势改为：一只手把还在冒烟的小枪举高，另一只手给自己扇风，"
-    "眯起一只眼睛傻笑。",
-    "shout-c5": STYLE + "继续用参考图里的那把枪，姿势改为：两只手一上一下地端着枪乱扫，身体被后坐力推得歪向一边，"
-    "嘴巴张到最大傻叫，舌头伸出来。",
-    # --- swim set: paddling laps around the composer bubble while the model works
-    "swim1": SWIM + "姿势：左手抬高划水、右手往下压，身体微微侧过来，水花在两边炸开。",
-    "swim2": SWIM + "姿势：两只手一起向前划，水花最大，脑袋往前探，嘴巴张到最大傻叫。",
-    "swim3": SWIM + "姿势：右手抬高划水、左手往下压，和参考图方向相反，身体微微侧过来。",
-    "swim4": SWIM + "姿势：两只手一起向后划，身体前倾，水花都在身后，舌头伸出来。",
-    "swim5": SWIM + "姿势：换气——脑袋高高抬出水面，两只手在水面下划，身体上下起伏，眼睛笑成弧线。",
-    # --- drown set: he sinks when the turn drags, then comes back up
-    "drown1": DROWN + "水位：没到胸口，嘴巴张着吐出一串气泡，两只手在水面乱拍。",
-    "drown2": DROWN + "水位：没到下巴，眼睛变成晕眩的圈圈，气泡一串一串往上冒。",
-    "drown3": DROWN + "水位：只剩头顶和一撮呆毛露在外面，两只手在水面上扑腾。",
-    "drown4": DROWN + "水位：整个人沉下去了，水面上只剩几个气泡和一只举着的小手。",
-    # --- idle set A: standing, scratching his head. Three frames: open, half
-    # shut, shut, so the blink is a roll rather than a flicker.
-    "idle-a1": STYLE + "姿势改为：站在原地挠着后脑勺傻笑，另一只手扶着插在地上的小砍刀，嘴巴咧开露出两颗小獠牙，"
-    "眼睛半眯着显得又懒又傻，整个人是“等着被派活、脑子空空的”样子。",
-    "idle-a2": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
-    "把眼睛闭到一半（眼皮盖住眼珠的下半部分，正在眨眼的中途），不要动其它任何地方。",
-    "idle-a3": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
-    "把眼睛完全闭上，闭成两条向下的黑线（正在眨眼），不要动其它任何地方。",
-    # --- idle set B: sitting on the ground
-    "idle-b1": STYLE + "姿势改为：一屁股坐在地上，两条小短腿往前伸直，一只手撑地、另一只手挠着圆肚子，"
+    # --- idle: sitting on the ground, three frames so the blink is a roll
+    "idle1": STYLE + "姿势改为：一屁股坐在地上，两条小短腿往前伸直，一只手撑地、另一只手挠着圆肚子，"
     "脑袋歪向一边傻笑，眼睛又大又圆、一只眼珠歪向旁边，一副无所事事的呆样。",
-    "idle-b2": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
+    "idle2": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
     "把眼睛闭到一半（眼皮盖住眼珠的下半部分，正在眨眼的中途），不要动其它任何地方。",
-    "idle-b3": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
+    "idle3": "严格保持参考图中这个角色的设计、姿势、构图和纯色品红背景，一点都不要改动，只改一处："
     "把眼睛完全闭上，闭成两条向下的黑线（正在眨眼），不要动其它任何地方。",
+    # --- work: at the keyboard. Chained off work1 so the desk, screen and keyboard
+    # stay the same object from frame to frame.
+    "work1": WORK + "姿势：两只手都按在键盘上，身体前倾到最前面，嘴巴张到最大在喊，额头上冒出第一滴汗。",
+    "work2": WORK + "姿势：左手抬起来离开键盘、右手重重按下去，身体跟着往前一顿，两滴汗飞出去。",
+    "work3": WORK + "姿势：右手抬起来、左手重重按下去（和参考图方向相反），脑袋往前一探，汗珠更多。",
+    "work4": WORK + "姿势：两只手同时离开键盘举起来喊 WAAAGH，眼睛瞪到最大，汗珠往下滴。",
+    "work5": WORK + "姿势：两只手同时砸在键盘上，身体往下压，嘴巴张到最大，桌上的水杯被震得跳了一下。",
+    "work6": WORK + "姿势：一只手还在键盘上敲、另一只手抬起来擦额头上的汗，眼睛眯起来但嘴还在喊。",
 }
-# Shout frames are generated first so every later frame can reference one settled
-# design; within a set the frames hang off the set's own first frame, because the
-# unarmed base made the model invent a different prop for every pose.
+# The idle base settles the design; work1 hangs off it so the Ork at the desk is the
+# same Ork, and the rest of the work frames hang off work1 to keep the desk fixed.
 REFERENCES = {
-    "shout-a2": None,
-    "shout-a1": "shout-a2",
-    "shout-a3": "shout-a2",
-    "shout-a4": "shout-a1",
-    "shout-a5": "shout-a3",
-    "shout-b1": "shout-a2",
-    "shout-b2": "shout-a2",
-    "shout-b3": "shout-a2",
-    "shout-b4": "shout-b1",
-    "shout-b5": "shout-b3",
-    "shout-c1": "shout-a2",
-    "shout-c2": "shout-c1",
-    "shout-c3": "shout-c1",
-    "shout-c4": "shout-c3",
-    "shout-c5": "shout-c2",
-    "idle-a1": "shout-a2",
-    "idle-a2": "idle-a1",
-    "idle-a3": "idle-a1",
-    "idle-b1": "shout-a2",
-    "idle-b2": "idle-b1",
-    "idle-b3": "idle-b1",
-    "swim1": "shout-a2",
-    "swim2": "swim1",
-    "swim3": "swim1",
-    "swim4": "swim2",
-    "swim5": "swim2",
-    "drown1": "shout-a2",
-    "drown2": "drown1",
-    "drown3": "drown2",
-    "drown4": "drown3",
+    "idle1": None,
+    "idle2": "idle1",
+    "idle3": "idle1",
+    "work1": "idle1",
+    "work2": "work1",
+    "work3": "work1",
+    "work4": "work1",
+    "work5": "work1",
+    "work6": "work3",
 }
-# Idle strips are three frames (open, half shut, shut), shout and swim strips are
-# five, the drown strip is four, so each state walks its frames with one CSS
-# animation and only the image changes between sets.
+# Two states, two strips: sitting while nothing is asked of him, typing while the
+# model works. The idle strip is three frames (open, half shut, shut) so the blink is
+# a roll; the work strip is six.
 STRIPS = {
-    "ork-idle-a.png": ["idle-a1", "idle-a2", "idle-a3"],
-    "ork-idle-b.png": ["idle-b1", "idle-b2", "idle-b3"],
-    "ork-shout-a.png": ["shout-a1", "shout-a2", "shout-a3", "shout-a4", "shout-a5"],
-    "ork-shout-b.png": ["shout-b1", "shout-b2", "shout-b3", "shout-b4", "shout-b5"],
-    "ork-shout-c.png": ["shout-c1", "shout-c2", "shout-c3", "shout-c4", "shout-c5"],
-    "ork-swim.png": ["swim1", "swim2", "swim3", "swim4", "swim5"],
-    "ork-drown.png": ["drown1", "drown2", "drown3", "drown4"]
+    "ork-idle.png": ["idle1", "idle2", "idle3"],
+    "ork-work.png": ["work1", "work2", "work3", "work4", "work5", "work6"],
 }
 
 

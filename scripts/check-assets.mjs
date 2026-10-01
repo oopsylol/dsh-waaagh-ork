@@ -1,7 +1,7 @@
 /**
  * Asserts the shipped sprite geometry.
  *
- * The stylesheet depends on it: both strips are walked with `background-position`
+ * The stylesheet depends on it: the strips are walked with `background-position`
  * over frames of exactly 128x160, and the icon head is drawn once. A truncated or
  * regenerated-at-the-wrong-size asset would otherwise fail silently on screen.
  */
@@ -10,16 +10,11 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 const assets = join(fileURLToPath(new URL('..', import.meta.url)), 'src', 'assets')
-/** file → [width, height]. Idle 3 frames, drown 4, shout and swim 5. */
+/** file → [width, height]. Two states: sitting (3 frames), typing (6). */
 const EXPECTED = [
   ['ork-open.png', 144, 144],
-  ['ork-idle-a.png', 128, 160 * 3],
-  ['ork-idle-b.png', 128, 160 * 3],
-  ['ork-shout-a.png', 128, 160 * 5],
-  ['ork-shout-b.png', 128, 160 * 5],
-  ['ork-shout-c.png', 128, 160 * 5],
-  ['ork-swim.png', 128, 160 * 5],
-  ['ork-drown.png', 128, 160 * 4]
+  ['ork-idle.png', 128, 160 * 3],
+  ['ork-work.png', 128, 160 * 6]
 ]
 
 let failed = false

@@ -49,14 +49,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-general/client'
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
-import orkDrown from '../assets/ork-drown.png'
-import orkIdleA from '../assets/ork-idle-a.png'
-import orkIdleB from '../assets/ork-idle-b.png'
+import orkIdle from '../assets/ork-idle.png'
 import orkOpen from '../assets/ork-open.png'
-import orkShoutA from '../assets/ork-shout-a.png'
-import orkShoutB from '../assets/ork-shout-b.png'
-import orkShoutC from '../assets/ork-shout-c.png'
-import orkSwim from '../assets/ork-swim.png'
+import orkWork from '../assets/ork-work.png'
 
 /** The module-table `require` the bundle factory receives from the Loader. */
 declare const require: (specifier: string) => unknown
@@ -149,22 +144,14 @@ const CSS = [
   'html[data-waaagh-orc] [data-composer-card]{padding-left:18px!important}',
   `.waaagh-orc{position:absolute;z-index:40;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
   /*
-   * One layer carries every state: waiting, working and the celebration are all
-   * "which mood strip is playing". Waiting rotates through all of them, so the
-   * corner is a little variety show rather than one pose on repeat:
-   *   idle-a / idle-b  three frames each, walking as an eyelid roll
-   *   swim / wave / choppa / dakka  five frames
-   *   drown  four frames
-   * A custom avatar overrides the lot with one still image.
+   * Two animations, two strips. Waiting: sitting on the ground, three frames walked
+   * as an eyelid roll. Working: at the keyboard, hammering away, sweating, yelling
+   * WAAAGH — six frames. Everything else (the swim, the drown, three shout sets, the
+   * standing idle, the pose rotation) is gone: one state, one drawing.
    */
-  `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 500%;animation:waaagh-mood-frames var(--waaagh-walk,3.6s) step-end infinite}`,
-  `html[data-waaagh-mood=idle-a] .waaagh-act{background-image:var(--waaagh-face,url("${orkIdleA}"));background-size:100% 300%;animation:waaagh-blink 5s step-end infinite}`,
-  `html[data-waaagh-mood=idle-b] .waaagh-act{background-image:var(--waaagh-face,url("${orkIdleB}"));background-size:100% 300%;animation:waaagh-blink 5s step-end infinite}`,
-  `html[data-waaagh-mood=swim] .waaagh-act{background-image:var(--waaagh-face,url("${orkSwim}"))}`,
-  `html[data-waaagh-mood=wave] .waaagh-act{background-image:var(--waaagh-face,url("${orkShoutA}"))}`,
-  `html[data-waaagh-mood=choppa] .waaagh-act{background-image:var(--waaagh-face,url("${orkShoutB}"))}`,
-  `html[data-waaagh-mood=dakka] .waaagh-act{background-image:var(--waaagh-face,url("${orkShoutC}"))}`,
-  `html[data-waaagh-mood=drown] .waaagh-act{background-image:var(--waaagh-face,url("${orkDrown}"));background-size:100% 400%;animation:waaagh-drown-frames var(--waaagh-drown-walk,2.8s) step-end infinite}`,
+  `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 300%;background-image:var(--waaagh-face,url("${orkIdle}"));animation:waaagh-blink 5s step-end infinite}`,
+  'html[data-waaagh-running=on] .waaagh-act{background-image:var(--waaagh-face,url("' + orkWork + '"));background-size:100% 600%;animation:waaagh-work-frames .7s step-end infinite}',
+  /* A custom avatar is one still image: no strip, so no walk. */
   '.waaagh-custom .waaagh-act{background-image:var(--waaagh-face)!important;background-size:contain!important;background-position:center!important;animation:none!important}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
      the owner renders `[data-composer-placeholder]` only while the draft is
@@ -172,25 +159,11 @@ const CSS = [
   '[data-composer-card]:not(:has([data-composer-placeholder])) .waaagh-orc{filter:saturate(1.18) brightness(1.06)}',
   /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
-  /*
-   * Working: he stays where he stands and swims on the spot. An earlier cut sent him
-   * back and forth along the top of the card like a progress bar; the owner's verdict
-   * was "看起来好傻". What is left of the effort signal is the frame walk — 0.8s a loop
-   * while the reply streams, 1.3s once it goes quiet — plus the drown when the turn
-   * drags, which stays in place too (the strip, a fade and a tilt).
-   */
-  'html[data-waaagh-running=on] .waaagh-orc{--waaagh-walk:.8s}',
-  'html[data-waaagh-swim=slow] .waaagh-orc{--waaagh-walk:1.3s}',
-  /* Going under is faster while he is meant to be working than while he is idle. */
-  'html[data-waaagh-running=on][data-waaagh-mood=drown] .waaagh-orc{--waaagh-drown-walk:1.4s}',
-  'html[data-waaagh-swim=drown] .waaagh-orc{animation:waaagh-sink 6s ease-in-out 1 forwards}',
-  '@keyframes waaagh-mood-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
-  '@keyframes waaagh-drown-frames{0%{background-position:0 0}25%{background-position:0 33.33%}50%{background-position:0 66.66%}75%{background-position:0 100%}}',
-  '@keyframes waaagh-sink{0%{opacity:1;transform:rotate(0)}30%{opacity:.45;transform:rotate(26deg) translateY(12px)}70%{opacity:.45;transform:rotate(26deg) translateY(12px)}100%{opacity:1;transform:rotate(0)}}',
+  '@keyframes waaagh-work-frames{0%{background-position:0 0}16.66%{background-position:0 20%}33.33%{background-position:0 40%}50%{background-position:0 60%}66.66%{background-position:0 80%}83.33%{background-position:0 100%}}',
   '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /*
-   * The turn finishing is worth a WAAAGH: a shout mood plays for a couple of
-   * seconds when the reply lands, with this run's bellow in a starburst.
+   * The turn finishing is worth a WAAAGH: the bellow lands in a starburst beside him
+   * for a couple of seconds.
    */
   `html[data-waaagh-cheer=on] .waaagh-orc::after{content:var(--waaagh-bellow,"WAAAGH!");position:absolute;left:-84%;top:2%;padding:15px 12px;font:900 13px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.05em;color:#0f1a06;background:${GREEN};clip-path:${starburst(10, 62)};filter:drop-shadow(2px 2px 0 #24380f);transform:rotate(-7deg);white-space:nowrap;animation:waaagh-burst-pop 1.1s ease-in-out infinite}`,
   '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-6deg) scale(.92)}45%{transform:rotate(-9deg) scale(1.08)}}',
@@ -339,74 +312,7 @@ let markScheduled = false
  */
 let runningWord = randomBellow()
 /**
- * Action sets. Waiting and working each have several strips; the set is redrawn
- * per run (and the idle one rotates on a timer) so a long session never replays
- * one loop forever. Sets are named by the `<html>` data attributes the stylesheet
- * keys on, so picking one is just a DOM write.
- */
-/**
- * Which strip is playing, in both states: waiting rotates through every mood (the
- * corner is a little variety show — scratching, sitting, paddling, and him going
- * under, with the excitable strips last so most of the time it reads calm), and
- * working pins it to the swim, swapping to the drown when the turn drags. Moods
- * are named by the `<html>` data attribute the stylesheet keys on.
- */
-const IDLE_MOODS = ['idle-a', 'idle-b', 'swim', 'drown', 'wave', 'choppa', 'dakka']
-const CHEER_MOODS = ['wave', 'choppa', 'dakka']
-/**
- * Waiting poses play as a run sheet, not as a lottery: the list is walked one step
- * at a time and every step holds for a random stretch — 11111111, 2222, 222,
- * 333333, 444. Two details matter. The walk only ever advances by one (or none), so
- * no pose is skipped or jumped back to and the order stays legible; and about two
- * fifths of the steps replay the current pose, which is what produces "2222, 222" —
- * the same face twice with different lengths. Picking freely at random instead gave
- * 4 → 1 → 4 jumps and left poses unseen for minutes.
- *
- * The holds are long on purpose: at 9-30s the corner was still changing pose often
- * enough to read as fidgeting, which is not what waiting should look like.
- */
-const IDLE_HOLD_MIN_MS = 30000
-const IDLE_HOLD_MAX_MS = 110000
-const IDLE_REPEAT_CHANCE = 0.4
-let idleMoodIndex = -1
-/** Next waiting pose: advance one step, or stay for another run of the same one. */
-function nextIdleMood(): string {
-  if (idleMoodIndex < 0 || Math.random() > IDLE_REPEAT_CHANCE) {
-    idleMoodIndex = idleMoodIndex < 0 ? 0 : (idleMoodIndex + 1) % IDLE_MOODS.length
-  }
-  return IDLE_MOODS[idleMoodIndex] ?? 'idle-a'
-}
-let idleMoodTimer = 0
-/**
- * Set the waiting pose now and book the next change.
- *
- * One shared timer, and it stands down while a turn runs: the work state owns the
- * mood then, and two writers made the strip flicker between moods mid-turn.
- * @param delayMs - how long to wait before drawing the next pose.
- */
-function scheduleIdleMood(delayMs: number): void {
-  if (typeof document === 'undefined') return
-  window.clearTimeout(idleMoodTimer)
-  idleMoodTimer = window.setTimeout(() => {
-    if (runningNow) {
-      scheduleIdleMood(4000)
-      return
-    }
-    document.documentElement.dataset.waaaghMood = nextIdleMood()
-    scheduleIdleMood(IDLE_HOLD_MIN_MS + Math.random() * (IDLE_HOLD_MAX_MS - IDLE_HOLD_MIN_MS))
-  }, delayMs)
-}
-function stopIdleMood(): void {
-  if (typeof window !== 'undefined') window.clearTimeout(idleMoodTimer)
-  idleMoodTimer = 0
-}
-function pickSet(sets: readonly string[]): string {
-  const picked = sets[Math.floor(Math.random() * sets.length)]
-  return picked ?? 'a'
-}
-/**
- * Fit the waiting mascot into the margin left of the composer card, and measure
- * the lap he swims around it.
+ * Fit the mascot into the margin left of the composer card.
  *
  * Width comes from the room the chat column leaves beside the card. The offsets
  * cannot: `left`/`top` on an absolutely positioned element are relative to its
@@ -485,25 +391,10 @@ function findRunningLabel(): Element | null {
 }
 /** Short bellow for the celebration bubble. */
 let burstWord = randomBellow(2, 6)
-/**
- * Swim bookkeeping. The model's own output is the only honest progress signal the
- * plugin has: streaming text mutates the transcript, so "is he still working?"
- * becomes "has the transcript changed lately?". Quiet for a while or a turn that
- * just runs long and the Ork goes under, then swims back up.
- */
-let lastActivityAt = 0
-let runStartedAt = 0
-let drownUntil = 0
-const QUIET_FAST_MS = 2500
-const QUIET_SLOW_MS = 9000
-const DROWN_MS = 6000
-const LONG_TURN_MS = 45000
-/** How long the Ork shouts after a turn lands. */
+/** True once a turn has run, so the celebration only fires after real work. */
+let hasRun = false
+/** How long the bellow hangs in its starburst after a turn lands. */
 const CHEER_MS = 2600
-/** Any transcript mutation counts as the model making progress. */
-function noteActivity(): void {
-  lastActivityAt = Date.now()
-}
 /**
  * Mask the running label with the current run's bellow.
  */
@@ -575,9 +466,7 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     if (typeof document === 'undefined') return
     const root = document.documentElement
     root.dataset.waaaghOrc = 'on'
-    // Waiting poses come and go in runs of random length, so the corner is never on
-    // a schedule the eye can predict.
-    scheduleIdleMood(0)
+    // Waiting is one drawing: he sits there. No pose rotation, no timers.
     const resize = (): void => fitMascot(orcRef.current)
     resize()
     window.addEventListener('resize', resize)
@@ -585,7 +474,6 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     const card = document.querySelector('[data-composer-card]')
     if (observer !== null && card !== null) observer.observe(card)
     return () => {
-      stopIdleMood()
       window.removeEventListener('resize', resize)
       observer?.disconnect()
       delete root.dataset.waaaghOrc
@@ -600,65 +488,28 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     return () => clearInterval(id)
   }, [running])
 
-  // While a turn runs he swims along the top of the box like a progress bar, and
-  // the pace comes from how the turn is going: fast while the reply streams, slow
-  // once the transcript goes quiet, and under water when it stays quiet or the turn
-  // just drags on. He comes back up by himself.
+  // A turn starts: draw this run's bellow, then flip the mascot to the keyboard.
+  // There is no progress state machine any more — the two animations are "sitting"
+  // and "typing", and `data-waaagh-running` is the whole switch between them.
   React.useEffect(() => {
     if (!running) return
     runningWord = randomBellow()
     burstWord = randomBellow(2, 6)
-    const root = document.documentElement
-    lastActivityAt = Date.now()
-    runStartedAt = Date.now()
-    drownUntil = 0
-    root.dataset.waaaghSwim = 'fast'
-    root.dataset.waaaghMood = 'swim'
+    hasRun = true
     markRunningLabel()
-    const swim = setInterval(() => {
-      const now = Date.now()
-      if (now < drownUntil) return
-      if (drownUntil !== 0) {
-        // Surfaced: back to swimming, with the long-turn clock restarted.
-        drownUntil = 0
-        runStartedAt = now
-        lastActivityAt = now
-        root.dataset.waaaghSwim = 'fast'
-        root.dataset.waaaghMood = 'swim'
-        return
-      }
-      const quiet = now - lastActivityAt
-      if (quiet > QUIET_SLOW_MS || now - runStartedAt > LONG_TURN_MS) {
-        drownUntil = now + DROWN_MS
-        root.dataset.waaaghSwim = 'drown'
-        root.dataset.waaaghMood = 'drown'
-        return
-      }
-      root.dataset.waaaghSwim = quiet < QUIET_FAST_MS ? 'fast' : 'slow'
-      root.dataset.waaaghMood = 'swim'
-    }, 1000)
-    return () => {
-      clearInterval(swim)
-      delete root.dataset.waaaghSwim
-      delete root.dataset.waaaghMood
-    }
   }, [running])
 
-  // The turn landing is worth a WAAAGH: a couple of seconds of shouting, then the
-  // waiting rotation picks up again.
+  // The turn landing is worth a WAAAGH: the bellow hangs in a starburst beside him
+  // for a couple of seconds.
   React.useEffect(() => {
     if (running || typeof document === 'undefined') return
-    if (runStartedAt === 0) return
+    if (!hasRun) return
     const root = document.documentElement
     root.dataset.waaaghCheer = 'on'
-    root.dataset.waaaghMood = pickSet(CHEER_MOODS)
     root.style.setProperty('--waaagh-bellow', JSON.stringify(burstWord))
     const id = setTimeout(() => {
       delete root.dataset.waaaghCheer
       root.style.removeProperty('--waaagh-bellow')
-      // The celebration is over: hand the mood back to the waiting rotation, which
-      // would otherwise not pick again for up to a minute.
-      scheduleIdleMood(0)
     }, CHEER_MS)
     return () => {
       clearTimeout(id)
@@ -705,8 +556,8 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
       title: 'WAAAGH',
       'aria-hidden': true
     },
-    // Working: the swim / drown / celebration strip. Hidden while waiting, where
-    // the idle pose carries the mascot.
+    // The one strip. Which drawing it shows is the stylesheet's call: sitting by
+    // default, at the keyboard once `data-waaagh-running` is set.
     React.createElement('span', { className: 'waaagh-act' })
   )
 }
@@ -874,10 +725,6 @@ export function apply(ctx: Context): void {
     for (const el of document.querySelectorAll(FLOW_ROWS)) orkify(el)
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
-        // The model's own output is how the swim state knows work is progressing.
-        // Our own nodes are excluded so a swimming mascot cannot keep itself awake.
-        const target = mutation.target
-        if (!(target instanceof Element) || target.closest('.waaagh-orc') === null) noteActivity()
         for (const node of mutation.addedNodes) {
           if (node.nodeType === 1) scan(node as Element)
         }
