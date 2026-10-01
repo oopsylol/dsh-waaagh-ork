@@ -5,3 +5,5 @@ node_modules/
 .env
 .npmrc
 _verify_*.png
+__pycache__/
+*.pyc
