@@ -173,23 +173,19 @@ const CSS = [
   /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Working: he swims along the top of the input box like an indeterminate
-   * progress bar — back and forth over the card, outside it — and goes under when
-   * the turn drags. The ends of the run and the height of the top edge are
-   * measured in `fitMascot`, since percentages of the containing block mean
-   * nothing here. Working walks its frames faster than waiting does: 0.8s a loop
-   * reads as effort when the model is answering, and as fidgeting when it is not.
+   * Working: he stays where he stands and swims on the spot. An earlier cut sent him
+   * back and forth along the top of the card like a progress bar; the owner's verdict
+   * was "看起来好傻". What is left of the effort signal is the frame walk — 0.8s a loop
+   * while the reply streams, 1.3s once it goes quiet — plus the drown when the turn
+   * drags, which stays in place too (the strip, a fade and a tilt).
    */
-  'html[data-waaagh-running=on] .waaagh-orc{--waaagh-walk:.8s;animation:waaagh-progress var(--waaagh-lap,9s) ease-in-out infinite alternate}',
-  'html[data-waaagh-swim=fast] .waaagh-orc{--waaagh-lap:5s}',
-  'html[data-waaagh-swim=slow] .waaagh-orc{--waaagh-lap:14s;--waaagh-walk:1.3s}',
+  'html[data-waaagh-running=on] .waaagh-orc{--waaagh-walk:.8s}',
+  'html[data-waaagh-swim=slow] .waaagh-orc{--waaagh-walk:1.3s}',
   /* Going under is faster while he is meant to be working than while he is idle. */
   'html[data-waaagh-running=on][data-waaagh-mood=drown] .waaagh-orc{--waaagh-drown-walk:1.4s}',
-  /* He keeps his place while drowning: going under is the strip, a fade and a tilt. */
   'html[data-waaagh-swim=drown] .waaagh-orc{animation:waaagh-sink 6s ease-in-out 1 forwards}',
   '@keyframes waaagh-mood-frames{0%{background-position:0 0}20%{background-position:0 25%}40%{background-position:0 50%}60%{background-position:0 75%}80%{background-position:0 100%}}',
   '@keyframes waaagh-drown-frames{0%{background-position:0 0}25%{background-position:0 33.33%}50%{background-position:0 66.66%}75%{background-position:0 100%}}',
-  '@keyframes waaagh-progress{from{left:var(--lap-x0);top:var(--lap-y0)}to{left:var(--lap-x1);top:var(--lap-y0)}}',
   '@keyframes waaagh-sink{0%{opacity:1;transform:rotate(0)}30%{opacity:.45;transform:rotate(26deg) translateY(12px)}70%{opacity:.45;transform:rotate(26deg) translateY(12px)}100%{opacity:1;transform:rotate(0)}}',
   '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /*
@@ -443,15 +439,6 @@ function fitMascot(orc: HTMLElement | null): void {
   orc.style.height = `${height}px`
   orc.style.left = `${left}px`
   orc.style.top = `${top}px`
-  // The progress bar travels along the card's top edge: measured ends, and a
-  // height that keeps him clear of the bubble's border.
-  const gap = 6
-  const x0 = Math.round(cardBox.left - width - gap - parentBox.left)
-  const x1 = Math.round(cardBox.right + gap - parentBox.left)
-  const y0 = Math.round(cardBox.top - parentBox.top - height * 0.72)
-  orc.style.setProperty('--lap-x0', `${x0}px`)
-  orc.style.setProperty('--lap-x1', `${x1}px`)
-  orc.style.setProperty('--lap-y0', `${y0}px`)
   orc.style.setProperty('--waaagh-w', `${width}px`)
   orc.style.setProperty('--waaagh-h', `${height}px`)
 }

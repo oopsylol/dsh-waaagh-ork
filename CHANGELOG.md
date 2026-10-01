@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.15.0 (2026-09-30)
+
+He swims on the spot now: the working animation no longer travels anywhere.
+
+- **The progress-bar sweep is gone.** Sent back and forth along the top edge of the
+  composer, the owner's verdict was "看起来好傻". He keeps the position `fitMascot`
+  gives him — the margin beside the bubble — and only the strip changes.
+- **The effort signal is the frame walk instead**: 0.8s a loop while the reply
+  streams, 1.3s once the transcript goes quiet. The drown stays in place too (the
+  strip, a fade and a tilt), and the breathing bob is the same gentle one he uses
+  while waiting, so working and waiting differ in what he is doing, not in where.
+- The measured lap variables came out of `fitMascot` with it.
+- Verified live: across a whole turn his position drifts 1px horizontally (the 4px
+  vertical is the breathing bob), the walk is 0.8s with the swim strip, no console
+  errors.
+
 ## 0.14.1 (2026-09-30)
 
 Waiting was still switching pose too often — 9-30s a step still reads as fidgeting.
