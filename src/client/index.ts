@@ -361,14 +361,17 @@ const CHEER_MOODS = ['wave', 'choppa', 'dakka']
  * Waiting poses play as a run sheet, not as a lottery: the list is walked one step
  * at a time and every step holds for a random stretch — 11111111, 2222, 222,
  * 333333, 444. Two details matter. The walk only ever advances by one (or none), so
- * no pose is skipped or jumped back to and the order stays legible; and about a
- * third of the steps replay the current pose, which is what produces "2222, 222" —
+ * no pose is skipped or jumped back to and the order stays legible; and about two
+ * fifths of the steps replay the current pose, which is what produces "2222, 222" —
  * the same face twice with different lengths. Picking freely at random instead gave
  * 4 → 1 → 4 jumps and left poses unseen for minutes.
+ *
+ * The holds are long on purpose: at 9-30s the corner was still changing pose often
+ * enough to read as fidgeting, which is not what waiting should look like.
  */
-const IDLE_HOLD_MIN_MS = 9000
-const IDLE_HOLD_MAX_MS = 30000
-const IDLE_REPEAT_CHANCE = 0.32
+const IDLE_HOLD_MIN_MS = 30000
+const IDLE_HOLD_MAX_MS = 110000
+const IDLE_REPEAT_CHANCE = 0.4
 let idleMoodIndex = -1
 /** Next waiting pose: advance one step, or stay for another run of the same one. */
 function nextIdleMood(): string {

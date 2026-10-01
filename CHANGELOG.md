@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.14.1 (2026-09-30)
+
+Waiting was still switching pose too often — 9-30s a step still reads as fidgeting.
+
+- **Holds are 30-110s now**, and the chance that a step replays the current pose went
+  from 32% to 40%, so a pose often runs twice in a row and the corner sits still for
+  a couple of minutes at a time.
+- Verified live: the waiting pose held through a full 45s sample window without
+  changing (the shortest hold is 30s and the clock only starts once the first pose
+  is drawn), no console errors.
+- The working state is untouched: 5s a pass while the reply streams, 14s while quiet.
+
 ## 0.14.0 (2026-09-30)
 
 More Ork: bigger tusks, meaner eyebrows, and a heavier greenskin build.
