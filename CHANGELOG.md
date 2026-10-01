@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.12.0 (2026-09-30)
+
+The mascot changed art direction: **ink line art** — the style of the reference the
+user picked. Thick hand-drawn outlines with a little wobble, mostly bare paper, one
+flat wash of colour, and the eyes drawn huge with tiny pupils, which is where the
+cute-and-daft face comes from now.
+
+- **All 30 frames regenerated** in the new style. The reference image was fed to the
+  model as a *style* reference for the base frame, and every other frame then hangs
+  off it as a character reference, so 30 frames stay one character in one style.
+  `mascot.py` gained `--style <image>` for exactly this, plus `--prompts <sheet>` so
+  a restyle does not mean editing the script.
+- **A wash is applied in post-processing** (`apply_wash`). The style asks for "one
+  flat wash and otherwise bare paper" and the model honours it only sometimes:
+  measured fill colours ranged from near-white to a healthy green, which flickers
+  when the flipbook runs. Desaturated mid-tones are now blended toward the sheet's
+  pale green (0.8), which pulled the fills into a narrow band (`#cedcb4`-`#d6e6c7`);
+  ink lines, the brown shorts and the blue water are saturated or dark enough to be
+  left alone.
+- **One scale and one baseline per strip.** Fitting each frame on its own made him
+  pulse — a frame with a shorter silhouette got scaled up to fill the box. The strip
+  is now sized once (by its largest silhouette) and every frame is pasted on the
+  same bottom edge.
+- **24-colour palette** instead of 64: line art with anti-aliasing at 64 colours
+  compresses badly. Assets 369KB → 262KB, bundle 528KB → 386KB.
+- The 16px icon head is still the hand-drawn pixel-art one; at 16px a line drawing
+  turns to mush. Say the word and it gets a line-art pass too.
+
 ## 0.11.3 (2026-09-30)
 
 0.11.2 read "11111111, 2222, 222, 333333, 444" as "random pose, random length" and
