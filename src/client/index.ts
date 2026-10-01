@@ -9,12 +9,15 @@
  * (`react` is a platform seed) and the module's exports become the plugin.
  *
  * What it does:
- *   1. Green Ork skin: the composer card gets a vivid green border/glow and the
- *      primary send button becomes a green "Waaagh!" pill.
- *   2. The pixel-Ork HEAD (sprite, background-image) stands at the left of the
- *      composer on a bolted armour plate — gunmetal, hazard stripe, a riveted
- *      right seam, a row of bone teef and a saw-tooth silhouette — and blinks;
- *      while a turn runs it writes cycling Ork gibberish into the placeholder.
+ *   1. Green Ork skin: the composer card becomes a comic speech bubble (chunky ink
+ *      border, hard offset shadow) and the primary send button becomes a green
+ *      "Waaagh!" pill.
+ *   2. The mascot: a full-body Ork drawn in ink line art stands in the margin left
+ *      of the bubble. Two animations only — sitting on the ground (three frames,
+ *      walked as an eyelid roll) while waiting, and hammering a laptop with sweat
+ *      flying (six frames) while a turn runs. `data-waaagh-running` is the whole
+ *      switch between them, and he never moves: an earlier cut sent him along the
+ *      top edge of the card like a progress bar, which read as silly.
  *   3. Output mask: assistant thinking + prose are hidden and replaced by a
  *      green "Waaaaaaagh!!!". It is STATIC for finished turns and only animates
  *      (growing a's, GPU clip-path) while the turn is streaming.
@@ -28,7 +31,7 @@
  * the mask itself. Nothing here writes to the draft, so what you type is what
  * gets sent.
  *
- * Compatibility notes (DSH 0.1.6-alpha.2 web + 0.1.7-rc.2 desktop):
+ * Compatibility notes (DSH 0.1.6-alpha.2 CLI + 0.2.0-rc.2 desktop):
  *   - The composer is a Lexical contenteditable with a dedicated
  *     `[data-composer-placeholder]` node, so the placeholder is styled through
  *     that node instead of `textarea::placeholder`.
@@ -36,6 +39,9 @@
  *     became screen-reader-only) into the current turn-process row; the running
  *     label is therefore located at runtime and tagged with
  *     `data-waaagh-run-label` rather than selected by CSS only.
+ *   - 0.2.0 replaced the `data-text-shimmer` marker with `data-shimmer` and moved
+ *     the text into an inner span, so the running label is located by class-name
+ *     fallback (`[class*=runningText]`) before either marker.
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -250,13 +256,11 @@ const CSS = [
   sendRule(':active{transform:scale(.93)}'),
   /* ── animation keyframes ──────────────────────────────────────────────── */
   '@keyframes waaagh-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.02)}}',
-  '@keyframes waaagh-chant{0%,100%{transform:translateY(0) rotate(-2.5deg) scale(1)}50%{transform:translateY(-3px) rotate(2.5deg) scale(1.05)}}',
   '@keyframes waaagh-bark{0%{transform:scale(1) rotate(0)}22%{transform:scale(1.22) rotate(-8deg)}55%{transform:scale(1.05) rotate(6deg)}100%{transform:scale(1) rotate(0)}}',
   '@keyframes waaagh-pop{0%{transform:scale(.84) rotate(-2deg);opacity:0}70%{transform:scale(1.07) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}',
-  '@keyframes waaagh-shout{from{transform:translateY(0) rotate(-1.4deg)}to{transform:translateY(-2px) rotate(1.4deg)}}',
   '@keyframes waaagh-dakka{0%{transform:scale(.55) rotate(-16deg);filter:brightness(2.4)}55%{transform:scale(1.2) rotate(9deg)}100%{transform:scale(1) rotate(0);filter:none}}',
   /* one switch turns the whole menagerie off */
-  '@media (prefers-reduced-motion:reduce){.waaagh-orc,.waaagh-orc::before,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-act,html[data-waaagh-cheer=on] .waaagh-act,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
+  '@media (prefers-reduced-motion:reduce){.waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-act,html[data-waaagh-cheer=on] .waaagh-orc::after,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
 ].join('\n')
 
 const TAG_ID = 'dsh-waaagh-ork/styles'
@@ -343,8 +347,6 @@ function fitMascot(orc: HTMLElement | null): void {
   orc.style.height = `${height}px`
   orc.style.left = `${left}px`
   orc.style.top = `${top}px`
-  orc.style.setProperty('--waaagh-w', `${width}px`)
-  orc.style.setProperty('--waaagh-h', `${height}px`)
 }
 /** Drop the running label from whichever element carried it. */
 function clearRunningLabel(): void {
@@ -646,12 +648,12 @@ export function apply(ctx: Context): void {
   // streaming bellow), and paint the Ork over every process-row leading icon.
   ctx.effect(() => {
     if (typeof document === 'undefined') return () => {}
+    const root = document.documentElement
     // One-shot bark when one of YOUR messages lands in the transcript. The flag
     // is cleared after the animation; a fresh one restarts it via a layout read.
     const startedAt = Date.now()
     let barkTimer: ReturnType<typeof setTimeout> | undefined
     const bark = (): void => {
-      const root = document.documentElement
       root.removeAttribute('data-waaagh-send')
       void root.offsetWidth
       root.setAttribute('data-waaagh-send', 'on')
@@ -732,6 +734,10 @@ export function apply(ctx: Context): void {
     })
     observer.observe(document.body, { childList: true, subtree: true, characterData: true })
     markRunningLabel()
-    return () => observer.disconnect()
+    return () => {
+      clearTimeout(barkTimer)
+      root.removeAttribute('data-waaagh-send')
+      observer.disconnect()
+    }
   })
 }

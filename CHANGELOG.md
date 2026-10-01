@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.16.2 (2026-09-30)
+
+A sweep for what the refactors left behind. Nothing here is visible on screen except
+the docs; it is all dead weight and stale words.
+
+- **Dead CSS removed**: the `waaagh-chant` and `waaagh-shout` keyframes (orphaned when
+  the pose sets went), and the `--waaagh-w` / `--waaagh-h` custom properties that
+  `fitMascot` still wrote but nothing had read since the lap animation was cut.
+- **Reduced-motion list fixed**: it still named `.waaagh-orc::before` (that layer was
+  replaced by the child span several versions ago) and `html[data-waaagh-cheer=on]
+  .waaagh-act` (the celebration is the `::after` starburst now), so the switch was
+  missing the bubble it was supposed to freeze.
+- **`data-waaagh-send` is cleared on dispose** along with its pending timer, so
+  unmounting mid-bark cannot leave the attribute (or a stray timeout) on `<html>`.
+- **Prose caught up with the art**: the module docstring still described the 0.2-era
+  "pixel-Ork head on a bolted armour plate", and the compatibility note still cited
+  the 0.1.7 desktop build; the host half, `package.json` (`pixel-Ork` description,
+  `pixel-art` keyword) and the README opener all still said "pixel". All now say ink
+  line art, and the README's generator table documents `--style` and the edit-in-place
+  trick that fixed the sound-effect letters.
+- Verified live after the change: idle 3-frame strip at 5s, work 6-frame strip at
+  0.7s, card has no `background-image`, no console errors, `pnpm run verify` green.
+
 ## 0.16.1 (2026-09-30)
 
 - **The bubble's tail is gone.** The dark triangle on the card's left edge was the

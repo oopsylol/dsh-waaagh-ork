@@ -1,7 +1,7 @@
 {
   "name": "dsh-waaagh-ork",
-  "version": "0.16.1",
-  "description": "WAAAGH! — a green pixel-Ork mascot plugin for DSH Web and DSH Desktop: green Ork skin + blinking mascot, the model's thinking and output masked as green \"Waaaaaaagh!!!\" (click to reveal the original), and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator. Never touches the composer draft: what you type is what gets sent.",
+  "version": "0.16.2",
+  "description": "WAAAGH! — a green Ork mascot plugin for DSH Web and DSH Desktop: an ink line-art Ork who sits beside the composer while waiting and hammers a laptop while the model works, green Ork skin + a comic speech bubble, the model's thinking and output masked as green \"Waaaaaaagh!!!\" (click to reveal the original), and a \"Deep diving\" → \"Waaaaaaagh!!!\" running indicator. Never touches the composer draft: what you type is what gets sent.",
   "license": "MIT",
   "type": "module",
   "publishConfig": {
@@ -49,7 +49,7 @@
     "ork",
     "warhammer",
     "mascot",
-    "pixel-art"
+    "line-art"
   ],
   "dsh": {
     "bundle": {
