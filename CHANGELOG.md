@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.18.3 (2026-09-30)
+
+- **The GitHub Actions are on current majors** (`checkout@v7`, `setup-node@v7`,
+  `pnpm/action-setup@v6`). The green run still carried two warnings: those actions were
+  being forced onto Node 24 while still targeting Node 20, plus the ubuntu-latest
+  migration notice. Clean CI output is worth the two-line change.
+- Checked after the bump with `gh run watch`: green, and every step did what it should —
+  `verify` (typecheck + the asset contracts including the new icon check + the
+  byte-identical `lib/` rebuild on Linux) and `smoke` skipping itself with exit 0 because
+  there is no instance URL in CI.
+
+## 0.18.2 (2026-09-30)
+
+- **CI was red, and it was my doing**: 0.18.0 added `"packageManager": "pnpm@11.7.0"` to
+  `package.json` while the workflow still passed `version: 11` to `pnpm/action-setup`,
+  and that action refuses to run with both — it failed in seven seconds, before a single
+  check. The `packageManager` field is the single source of truth now, with a comment
+  saying why the `version:` input must not come back.
+- The two runs before it (0.18.0, 0.18.1) failed for the same reason, confirmed from the
+  failed-run logs rather than assumed.
+- Everything after that point was already fine: `.gitattributes` pins `lib/*.js` to LF,
+  so the "committed bundle rebuilds byte-identically" check passes on a Linux runner, and
+  the smoke test skips cleanly without a URL.
+
 ## 0.18.1 (2026-09-30)
 
 The plugin had no icon in DSH's plugin list — it showed the manager's generic node
