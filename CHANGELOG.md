@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.13.0 (2026-09-30)
+
+The line-art style stayed; the character was wrong. "太小孩，不太兽人" — he read as a
+human baby. Redesigned, keeping the style and the chibi proportions (fierce, still
+cute):
+
+- **Ork features**: a big square head with a **wide jutting jaw** and **two thick
+  tusks curling up out of the mouth**, a **heavy brow angled down toward the
+  middle**, big round eyes, a wide flat nose with visible nostrils, long pointed
+  ears, a topknot, a simple collar, belt, boots and a small shoulder plate. The body
+  stays round and three-heads-tall — **no pecs, no abs, no muscle lines**.
+- **The first attempt overshot**: asking for a "sturdy Ork" produced a bodybuilder —
+  broad shoulders, defined muscles and soft rendered shading, which threw away both
+  the chibi charm and the line-art style. The prompt now names the failure modes
+  outright ("不是人类小孩、也不是肌肉壮汉", "不画肌肉线条、不画渐变和阴影").
+- **`--rebase <dir>`** re-edits saved frames in place, which is how a redesign keeps
+  30 poses that took rounds of prompting to get right. It worked for the standing
+  sets and **broke the water sets**: the model turned "up to his waist in water" into
+  "standing in a small puddle" and one set came back with a rectangle drawn around
+  the character. Swim and drown were regenerated from scratch instead — for those,
+  the pose *is* the point.
+- **The wash is hue-based now** (`apply_wash`). Blending every desaturated pixel
+  toward the sheet green — the 0.12.0 approach — turned boots and blades green, and
+  with the new skin the model's own green is vivid enough that frames ranged from
+  near-white to a strong green. Greens are now pulled 0.7 toward the sheet colour and
+  near-white (unpainted skin or paper) 0.75, so only skin moves: within-strip fills
+  now agree to within a few levels (`idle-a` #d7e3c6 three times, `idle-b` #d3e3c3),
+  and ink, shorts and water are untouched.
+- Assets 262KB → 276KB, bundle 386KB → 403KB.
+
 ## 0.12.0 (2026-09-30)
 
 The mascot changed art direction: **ink line art** — the style of the reference the

@@ -50,9 +50,15 @@ LINE = (
     "眼睛画得特别大又圆、瞳孔是很小的黑点，表情呆萌可爱。"
 )
 CHARACTER = (
-    "角色：一只可爱的兽人小子（Warhammer 40k greenskin），三头身、大圆脑袋、一撮歪掉的呆毛、"
-    "小短手小短腿、圆滚滚的肚子、两颗小獠牙、脸颊贴着一块创可贴；皮肤只上一层很淡的绿色平涂，"
-    "裤子淡棕色，其余留白。"
+    "角色：一只可爱的兽人小子（Warhammer 40k greenskin），**不是人类小孩、也不是肌肉壮汉**——"
+    "三头身，**脑袋又大又方**，身体**圆滚滚但结实**（有肚子，没有胸肌腹肌）；"
+    "**下颚宽大、明显向前突**，**两颗粗大的獠牙从下颚向上翘出嘴外**，嘴角还露两颗方牙；"
+    "**眉骨厚重、眉毛压低斜向中间**，眼睛又大又圆（眼白大、瞳孔小而黑）、带一点凶相；"
+    "鼻子扁而宽、两个鼻孔清楚；耳朵又长又尖、向外撇；头顶一撮呆毛；"
+    "脖子上一条简单的皮项圈、腰上一条简单腰带（方形扣）、脚上一双简单的厚靴子、"
+    "一边肩膀上挂一块简单的小护肩——这些都用线条画，不要画金属反光和渐变。"
+    "皮肤上是**明显的绿色**平涂，裤子深棕色，其余留白。"
+    "**务必保持线条画风：不画肌肉线条、不画渐变和阴影、不做写实渲染。**"
 )
 FRAMING = (
     "全身、正面、居中，纯色品红背景（#CC1166）；背景必须干净——不要画任何投影、影子、地面、"
@@ -277,18 +283,29 @@ def drop_speckles(image: Image.Image) -> Image.Image:
     return out
 
 
-WASH = (207, 230, 190)  # the pale green skin wash of the style sheet
+WASH = (211, 232, 196)  # the pale green every frame's skin is pulled to
 
 
-def apply_wash(image: Image.Image, strength: float = 0.8) -> Image.Image:
-    """Give every frame the same pale-green skin wash.
+def _blend(pixel: tuple, target: tuple, strength: float) -> tuple:
+    return (
+        round(pixel[0] + (target[0] - pixel[0]) * strength),
+        round(pixel[1] + (target[1] - pixel[1]) * strength),
+        round(pixel[2] + (target[2] - pixel[2]) * strength),
+        pixel[3],
+    )
+
+
+def apply_wash(image: Image.Image) -> Image.Image:
+    """Pull every frame's skin to the same pale green.
 
     The style asks for "one flat wash of colour and otherwise bare paper", and the
-    model honours it most of the time — but not always: some frames come back almost
-    pure white (measured 2% coloured pixels against 86% on the greenest frame), and a
-    flipbook that changes colour between frames flickers. Only desaturated mid-tones
-    are blended: the ink lines stay black, and the pale-brown shorts and the blue
-    water are saturated enough to be left alone.
+    model's idea of how much green that is varies a lot — measured mean fills ran
+    from near-white to a vivid green, which flickers badly in a flipbook. Pixels are
+    classified by hue instead of by brightness, so only skin is touched: greens are
+    pulled down toward the sheet colour, near-white (which is either skin the model
+    left unpainted or paper) is pulled up to it, and the ink lines, the brown shorts
+    and the blue water are saturated or dark enough to be left alone. An earlier cut
+    washed every desaturated pixel and turned boots and blades green.
     """
     out = image.copy()
     pixels = out.load()
@@ -298,14 +315,14 @@ def apply_wash(image: Image.Image, strength: float = 0.8) -> Image.Image:
             if a == 0:
                 continue
             hue, saturation, value = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-            if value < 0.45 or saturation > 0.16:
-                continue
-            pixels[x, y] = (
-                round(r + (WASH[0] - r) * strength),
-                round(g + (WASH[1] - g) * strength),
-                round(b + (WASH[2] - b) * strength),
-                a,
-            )
+            if value < 0.5:
+                continue  # ink and shading
+            greenish = 0.15 <= hue <= 0.45 and saturation > 0.08
+            papery = saturation <= 0.08 and value > 0.78
+            if greenish:
+                pixels[x, y] = _blend((r, g, b, a), WASH, 0.7)
+            elif papery:
+                pixels[x, y] = _blend((r, g, b, a), WASH, 0.75)
     return out
 
 
@@ -350,6 +367,7 @@ def main() -> None:
     parser.add_argument("--only", action="append", help="generate just these frames (repeatable)")
     parser.add_argument("--style", type=pathlib.Path, help="style reference for the base frame (art direction)")
     parser.add_argument("--prompts", type=pathlib.Path, help="JSON restyle sheet: {style, prompts, references}")
+    parser.add_argument("--rebase", type=pathlib.Path, help="re-edit these saved frames in place (pose preserved)")
     args = parser.parse_args()
 
     default_raw = pathlib.Path(os.environ.get("TEMP", "/tmp")) / "waaagh-mascot-raw"
@@ -367,7 +385,14 @@ def main() -> None:
 
     def generate(name: str) -> None:
         reference = REFERENCES.get(name)
-        source = raw / f"{reference}.png" if reference else args.style
+        if reference:
+            source = raw / f"{reference}.png"
+        elif args.rebase is not None and (args.rebase / f"{name}.png").exists():
+            # Re-edit the frame we already have: a redesign keeps the poses that took
+            # a whole round of prompts to get right, and only the character changes.
+            source = args.rebase / f"{name}.png"
+        else:
+            source = args.style
         request_frame(PROMPTS[name], source, raw / f"{name}.png")
 
     if args.only:
