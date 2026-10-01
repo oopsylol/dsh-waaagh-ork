@@ -101,21 +101,21 @@ PROMPTS = {
     "work4": WORK + "姿势：两只手同时离开键盘举起来喊 WAAAGH，眼睛瞪到最大，汗珠往下滴。",
     "work5": WORK + "姿势：两只手同时砸在键盘上，身体往下压，嘴巴张到最大，桌上的水杯被震得跳了一下。",
     "work6": WORK + "姿势：一只手还在键盘上敲、另一只手抬起来擦额头上的汗，眼睛眯起来但嘴还在喊。",
+    # Two quiet frames so the loop breathes: six frames of nothing but yelling reads as
+    # one frozen pose when a turn runs for a minute. Both hang off work1, the clearest
+    # keyboard pose, so only the face changes.
+    "work7": WORK + "姿势和参考图完全一样，但把嘴巴闭上、嘴唇抿紧，眼睛盯着屏幕、眉毛压低，一副拼命专注的"
+    "样子，把头上的汗珠全部去掉。",
+    "work8": WORK + "姿势和参考图完全一样，但嘴巴闭紧咬着牙（两颗獠牙露在嘴唇外面）、眼睛瞪大盯着屏幕，"
+    "额头和脑袋旁边冒出几滴汗珠。",
+    # The 16px icon. Drawn on purpose rather than cropped out of a strip: at 16px a
+    # full-body frame's head is a green blob, so this asks for a close-up with a hard
+    # face — big eyes, heavy brow, tusks — which is what survives at that size.
+    "icon1": LINE + CHARACTER + "只画这个兽人的**头部特写**：正面、大头、占满整个画面，"
+    "不画身体、不画手臂、不画桌子电脑、不画任何背景物体；"
+    "表情是压低眉毛、瞪大眼睛的凶相，嘴巴咧开露出两颗大獠牙；"
+    "线条画得更粗更黑、五官更大更清楚，方便缩小到 16 像素时仍然认得出。" + FRAMING,
 }
-# NOT GENERATED YET — the Ark account went overdue (403 AccountOverdueError) while
-# these were being added, so the shipped art stops at the six work frames above. They
-# are kept here as the next step, and the plugin compensates in the meantime by
-# walking the six frames on an uneven rhythm (see the work keyframes in the client)
-# so a long turn does not read as one metronome: two quiet frames would make it better
-# still, and the icon below could then come from a purpose-drawn head instead of a
-# crop of the idle strip.
-#
-#   "work7": WORK + "姿势和参考图完全一样，但把嘴巴闭上、嘴唇抿紧，眼睛盯着屏幕、眉毛压低，一副拼命专注的"
-#   "样子，把头上的汗珠全部去掉。",
-#   "work8": WORK + "姿势和参考图完全一样，但嘴巴闭紧咬着牙（两颗獠牙露在嘴唇外面）、眼睛瞪大盯着屏幕，"
-#   "额头和脑袋旁边冒出几滴汗珠。",
-#   "icon1": LINE + CHARACTER + "只画这个兽人的头部特写：正面、大头、占满画面，不画身体、不画手臂、"
-#   "不画任何背景物体；表情是压低眉毛、瞪着眼睛的凶相，嘴巴咧开露出獠牙。" + FRAMING,
 # The idle base settles the design; work1 hangs off it so the Ork at the desk is the
 # same Ork, and the rest of the work frames hang off work1 to keep the desk fixed.
 REFERENCES = {
@@ -128,14 +128,20 @@ REFERENCES = {
     "work4": "work1",
     "work5": "work1",
     "work6": "work3",
+    "work7": "work1",
+    "work8": "work1",
+    "icon1": "idle1",
 }
 # Two states, two strips: sitting while nothing is asked of him, typing while the
 # model works. The idle strip is three frames (open, half shut, shut) so the blink is
-# a roll; the work strip is six.
+# a roll; the work strip is eight — six hammering, two quiet.
 STRIPS = {
     "ork-idle.png": ["idle1", "idle2", "idle3"],
-    "ork-work.png": ["work1", "work2", "work3", "work4", "work5", "work6"],
+    "ork-work.png": ["work1", "work2", "work3", "work4", "work5", "work6", "work7", "work8"],
 }
+# The icon: one purpose-drawn head frame, fitted to 144x144 by `build_icon`.
+ICON_FRAME = "icon1"
+ICON_SIZE = 144
 
 
 def request_frame(prompt: str, reference: pathlib.Path | None, out: pathlib.Path) -> None:
@@ -323,6 +329,32 @@ def build_strips(raw: pathlib.Path) -> None:
         print(f"{target.relative_to(ROOT)}: {strip.width}x{strip.height}, {len(frames)} frames, {target.stat().st_size} bytes")
 
 
+def build_icon(raw: pathlib.Path) -> None:
+    """Build the 144x144 icon (`ork-open.png`) from the purpose-drawn head frame.
+
+    The icon shows at 16px in tool / running / process rows. Cropping a head out of a
+    strip was tried first and measured: at 16px it is a green blob, and neither a bolden
+    pass nor a drop to 8 colours recovered the eyes. Hence `icon1`: the model is asked
+    for a close-up with thicker ink and bigger features, and only the fit is done here.
+    """
+    source = raw / f"{ICON_FRAME}.png"
+    if not source.exists():
+        raise SystemExit(f"missing raw icon frame: {source}")
+    image = apply_wash(drop_speckles(key_magenta(Image.open(source))))
+    box = image.getbbox()
+    if box is None:
+        raise SystemExit("icon frame is empty after keying")
+    head = image.crop(box)
+    scale = (ICON_SIZE - 2) / max(head.width, head.height)
+    size = (max(1, round(head.width * scale)), max(1, round(head.height * scale)))
+    head = head.resize(size, Image.LANCZOS)
+    icon = Image.new("RGBA", (ICON_SIZE, ICON_SIZE), (0, 0, 0, 0))
+    icon.paste(head, ((ICON_SIZE - size[0]) // 2, (ICON_SIZE - size[1]) // 2))
+    target = ASSETS / "ork-open.png"
+    icon.quantize(colors=PALETTE_COLORS, method=Image.FASTOCTREE).save(target, optimize=True)
+    print(f"{target.relative_to(ROOT)}: {icon.width}x{icon.height}, {target.stat().st_size} bytes")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raw", type=pathlib.Path, help="directory of saved raw frames (skips generation)")
@@ -330,6 +362,8 @@ def main() -> None:
     parser.add_argument("--style", type=pathlib.Path, help="style reference for the base frame (art direction)")
     parser.add_argument("--prompts", type=pathlib.Path, help="JSON restyle sheet: {style, prompts, references}")
     parser.add_argument("--rebase", type=pathlib.Path, help="re-edit these saved frames in place (pose preserved)")
+    parser.add_argument("--icon", action="store_true", help="also rebuild the 144x144 icon from the head frame")
+    parser.add_argument("--icon-only", action="store_true", help="rebuild only the icon (no strips, no generation)")
     args = parser.parse_args()
 
     default_raw = pathlib.Path(
@@ -359,6 +393,9 @@ def main() -> None:
             source = args.style
         request_frame(PROMPTS[name], source, raw / f"{name}.png")
 
+    if args.icon_only:
+        build_icon(raw)
+        return
     if args.only:
         for name in args.only:
             generate(name)
@@ -368,6 +405,8 @@ def main() -> None:
             generate(name)
 
     build_strips(raw)
+    if args.icon:
+        build_icon(raw)
 
 
 if __name__ == "__main__":

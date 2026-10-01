@@ -100,14 +100,14 @@ pnpm run smoke        # 对运行中的实例做行为回归（见下），没�
 DSH_SMOKE_URL='http://127.0.0.1:PORT/?token=...' pnpm run smoke
 ```
 
-它断言的是**只有真跑起来才知道的事**：待机是 3 帧坐姿、干活切到 6 帧键盘、兽人不压住输入框、**草稿原样保留且原样送达**、控制台零报错。
+它断言的是**只有真跑起来才知道的事**：待机是 3 帧坐姿、干活切到 8 帧键盘、兽人不压住输入框、气泡没有多余尾巴、**草稿原样保留且原样送达**、控制台零报错。
 
 **吉祥物是 AI 生成的**（`scripts/mascot.py`）：本机没有可用的国内生图 skill（小云雀要 `XYQ_ACCESS_KEY`，SpriteCook 要它自己的 MCP 服务端），但用户环境里已经有**火山方舟**凭据，于是走 `doubao-seedream-4-0` 的 `images/generations`：
 
 ```sh
 # ARK_API_KEY / ARK_BASE_URL / VOLC_IMAGE_MODEL 从环境读取；密钥不会被打印
-python scripts/mascot.py                       # 生成 9 帧 → 组装 2 条雪碧图
-python scripts/mascot.py --raw <dir>           # 用已保存的原图重建，不再消耗额度（CI 走这条）
+python scripts/mascot.py                       # 生成 12 帧 → 组装 2 条雪碧图 + 144×144 图标
+python scripts/mascot.py --raw <dir> --icon    # 用已保存的原图重建，不再消耗额度（CI 走这条）
 python scripts/mascot.py --style ref.png --prompts sheet.json   # 换画风：参考图 + 提示词表
 python scripts/mascot.py --raw <新目录> --rebase <旧目录>         # 只改角色设计，保留姿势
 ```
@@ -133,13 +133,12 @@ python scripts/mascot.py --raw <新目录> --rebase <旧目录>         # 只改
 | 文件 | 尺寸 | 内容 | 来源 |
 | --- | --- | --- | --- |
 | `ork-idle.png` | 128×160 ×3 帧 | 等待：坐在地上挠肚子傻笑 + 眨眼过渡帧 | `scripts/mascot.py`（AI 生成） |
-| `ork-work.png` | 128×160 ×6 帧 | 干活：蹲在笔记本前拼命敲键盘、甩汗、张嘴吼 | 同上 |
-| `ork-open.png` | 144×144 | 16px 图标用的大头（工具行 / 运行行 / 过程行） | `scripts/sprite.mjs`（**手绘像素画**）|
-
-> **16px 图标为什么还是手绘像素画**：试过把它也换成线条画（从待机雪碧图里量出头身比例裁头），在 16px 下实测是一团糊，加粗暗部、砍到 8 色都救不回来——这个尺寸需要**专门画一个高对比大头**，等生图额度恢复后按 mascot.py 里已经写好的 icon1 提示词生成即可。线条画版本的对比图在同批提交的说明里。
+| `ork-work.png` | 128×160 ×8 帧 | 干活：蹲在笔记本前拼命敲键盘、甩汗、张嘴吼，末尾两帧闭嘴专注 | 同上 |
+| `ork-open.png` | 144×144 | 16px 图标用的大头（工具行 / 运行行 / 过程行） | `mascot.py --icon`：**专门画的高对比头部**，不是从雪碧图里裁的 |
 
 
-两套模组由 `<html>` 上的 **`data-waaagh-running=on`** 切换（回合开始就打上），CSS 里只换 `background-image` 和翻帧动画：**待机 3 帧 / 5 秒一轮**（眨眼滚动），**干活 6 帧 / 1.1 秒一轮，但节奏不均匀**——敲击帧各占 9–11%，"喊"和"擦汗"两帧各占两倍时长，长回合才不会变成节拍器。
+
+两套模组由 `<html>` 上的 **`data-waaagh-running=on`** 切换（回合开始就打上），CSS 里只换 `background-image` 和翻帧动画：**待机 3 帧 / 5 秒一轮**（眨眼滚动），**干活 8 帧 / 1.2 秒一轮，但节奏不均匀**——六帧敲击各占 9–10%，"喊""擦汗""专注"这几帧占 1.4–1.8 倍时长，长回合才不会变成节拍器。
 
 多帧动画都拼成**竖直雪碧图**，CSS 只放一个 URL，用 `background-position` 走几步切帧。**原始帧（1024² 的 9 张）不在仓库里**（约 3MB），归档在维护者机器的 `D:\MacShare\waaagh-art\frames`（`WAAAGH_RAW_DIR` 指过去就能离线重建雪碧图，否则要重新花额度生成）。
 
@@ -148,7 +147,7 @@ python scripts/mascot.py --raw <新目录> --rebase <旧目录>         # 只改
 | `src/client/index.ts` | 浏览器半：插槽注册、绿皮头像、输入/输出遮罩、运行提示 |
 | `src/host/index.ts` | Node 半：有意的空实现，只为让 Loader 条目能激活 |
 | `src/assets/*.png` | 精灵图（两条 AI 雪碧图 + 裁出来的图标），构建时内联成 data URL |
-| `scripts/mascot.py` | AI 生成吉祥物：调火山方舟 doubao-seedream、抠品红背景、拼雪碧图 |
+| `scripts/mascot.py` | AI 生成吉祥物：调火山方舟 doubao-seedream、抠品红背景、拼雪碧图、`--icon` 生成 16px 图标 |
 | `scripts/check-assets.mjs` | 校验三张图的尺寸/帧数契约 |
 | `scripts/smoke.mjs` | 对运行中的实例做行为回归（切换、草稿不变、零报错） |
 | `scripts/build.mjs` | esbuild 构建：host 出 ESM，浏览器半出「懒 CJS 工厂注册」包 |
@@ -156,7 +155,7 @@ python scripts/mascot.py --raw <新目录> --rebase <旧目录>         # 只改
 
 关于浏览器半的产物格式：DSH 以经典脚本方式加载每个插件的客户端包，脚本必须调用 `window.__ModuleLoader__.load({ id, factory })` 注册一个惰性 CJS 工厂，工厂体拿到的 `require` 是 shell 的冻结模块表（`react` 属于平台种子，必须保持 external）。这正是 `scripts/build.mjs` 用 banner/footer 包住 esbuild CJS 输出的原因。
 
-类型不靠猜：`@deepseek-ai/dsh-client-*` 在 npm 上带 `lib/types/**/*.d.ts`，devDependencies 里按 **0.2.0-rc.2** 精确锁定后，插槽名（`SlotMap` 声明合并）、seat 的标准 props（`useInput`/`useSession`/`inputActions`）、`InputState` 字段都由编译器把关——写错 slot 名或字段名会直接编译失败。CI 直接跑 `pnpm run verify`（typecheck + sprite + check-assets + build + `git diff --exit-code -- lib src/assets/ork-open.png`）。
+类型不靠猜：`@deepseek-ai/dsh-client-*` 在 npm 上带 `lib/types/**/*.d.ts`，devDependencies 里按 **0.2.0-rc.2** 精确锁定后，插槽名（`SlotMap` 声明合并）、seat 的标准 props（`useInput`/`useSession`/`inputActions`）、`InputState` 字段都由编译器把关——写错 slot 名或字段名会直接编译失败。CI 跑 `pnpm run verify`（typecheck + check-assets + build + `git diff --exit-code -- lib`）和 `pnpm run smoke`；三张精灵图都是生成产物，所以只校验尺寸契约、不做字节漂移。
 
 ## License
 

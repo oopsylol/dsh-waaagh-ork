@@ -15,11 +15,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # One source of truth: `verify` is typecheck + sprite + check-assets + build + the
-      # drift check on lib/ and the hand-drawn icon head (the sprite writer emits stored
-      # DEFLATE, so its bytes are stable). The two mascot strips are generated art —
-      # scripts/mascot.py needs an Ark API key — so they are checked for geometry.
-      # `smoke` runs behaviour checks against a live instance and skips without a URL.
+      # One source of truth: `verify` is typecheck + asset geometry + build + the drift
+      # check on lib/. All three sprite PNGs are generated art (scripts/mascot.py needs an
+      # Ark API key), so they are checked for geometry rather than bytes. `smoke` runs the
+      # behaviour checks against a live instance and skips when there is no URL.
       - run: pnpm run verify
       - run: pnpm run smoke
       - run: node --check lib/client.js

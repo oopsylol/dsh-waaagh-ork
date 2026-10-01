@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.18.0 (2026-09-30)
+
+The Ark balance came back, so the two pieces 0.17.0 had to leave out are in.
+
+- **The 16px icon is drawn, not cropped** (`icon1` → `mascot.py --icon` → `ork-open.png`).
+  0.17.0 measured the crop-a-head-out-of-a-strip idea and rejected it as a green blob;
+  this asks the model for a close-up with thicker ink, a heavier brow and bigger features
+  instead, and at 16px the brow, eye, tusks and mouth all survive. The hand-drawn pixel
+  head is retired from the icon — the sprite generator still runs (CI drift-checks its
+  output), but the icon it writes is no longer shipped.
+- **Two quiet work frames**: he now leans in with his mouth shut, focused on the screen,
+  once with sweat flying and once dry. The work strip is eight frames and the rhythm was
+  re-timed around them: six hammering beats at 9-10% of a 1.2s loop, and the yell, the
+  wipe and the two quiet beats holding between 1.4x and 1.8x as long. A minute-long turn
+  now reads as working rather than as one frozen yell.
+- The asset contract, the smoke test's frame assertion and the README were all updated
+  with the frame count (`100% 800%`, 128×160 ×8).
+- Verified: `pnpm run verify` green, `pnpm run smoke` green against a live instance.
+
 ## 0.17.0 (2026-09-30)
 
 The six follow-ups from the audit, all attempted. One of them came back negative and is

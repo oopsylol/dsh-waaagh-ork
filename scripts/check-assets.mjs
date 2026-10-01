@@ -10,11 +10,11 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 const assets = join(fileURLToPath(new URL('..', import.meta.url)), 'src', 'assets')
-/** file → [width, height]. Two states: sitting (3 frames), typing (6). */
+/** file → [width, height]. Two states: sitting (3 frames), typing (8). */
 const EXPECTED = [
   ['ork-open.png', 144, 144],
   ['ork-idle.png', 128, 160 * 3],
-  ['ork-work.png', 128, 160 * 6]
+  ['ork-work.png', 128, 160 * 8]
 ]
 
 let failed = false

@@ -156,7 +156,7 @@ const CSS = [
    * standing idle, the pose rotation) is gone: one state, one drawing.
    */
   `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 300%;background-image:var(--waaagh-face,url("${orkIdle}"));animation:waaagh-blink 5s step-end infinite}`,
-  'html[data-waaagh-running=on] .waaagh-act{background-image:var(--waaagh-face,url("' + orkWork + '"));background-size:100% 600%;animation:waaagh-work-frames 1.1s step-end infinite}',
+  'html[data-waaagh-running=on] .waaagh-act{background-image:var(--waaagh-face,url("' + orkWork + '"));background-size:100% 800%;animation:waaagh-work-frames 1.2s step-end infinite}',
   /* A custom avatar is one still image: no strip, so no walk. */
   '.waaagh-custom .waaagh-act{background-image:var(--waaagh-face)!important;background-size:contain!important;background-position:center!important;animation:none!important}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
@@ -166,13 +166,12 @@ const CSS = [
   /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
   /*
-   * Six work frames on an uneven rhythm, not a metronome: hammering beats are short
-   * (9-11% of the loop) and the two beats that read as effort — the yell and the wipe
-   * across the forehead — hold twice as long, so a turn that runs for a minute
-   * breathes instead of ticking. New "focused, mouth closed" frames were planned but
-   * the Ark account went overdue mid-round, so the rhythm carries it for now.
+   * Eight work frames on an uneven rhythm, not a metronome: the six hammering beats are
+   * short (9-10% of the loop) and the four that read as effort — the yell, the wipe
+   * across the forehead, and the two quiet focused beats that close the loop — hold
+   * between 1.4x and 1.8x as long, so a turn that runs for a minute breathes.
    */
-  '@keyframes waaagh-work-frames{0%{background-position:0 0}10%{background-position:0 20%}20%{background-position:0 40%}30%{background-position:0 60%}48%{background-position:0 80%}72%{background-position:0 100%}81%{background-position:0 0}90%{background-position:0 20%}100%{background-position:0 40%}}',
+  '@keyframes waaagh-work-frames{0%{background-position:0 0}10%{background-position:0 14.28%}20%{background-position:0 28.57%}29%{background-position:0 42.85%}45%{background-position:0 57.14%}54%{background-position:0 71.42%}72%{background-position:0 85.71%}86%{background-position:0 100%}100%{background-position:0 0}}',
   '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /*
    * The turn finishing is worth a WAAAGH: the bellow lands in a starburst beside him

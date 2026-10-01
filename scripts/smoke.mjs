@@ -114,7 +114,7 @@ try {
 
   const work = await probe()
   check(work.strip === 'waaagh-work-frames', 'working shows the keyboard strip', work.strip)
-  check(work.size === '100% 600%', 'working strip is 6 frames', work.size)
+  check(work.size === '100% 800%', 'working strip is 8 frames', work.size)
   check(work.clearsCard >= 0, 'the mascot stays clear while working', `${work.clearsCard}px`)
   const echoed = await page.evaluate((text) => document.body.innerText.includes(text), draft)
   check(echoed, 'the message reached the transcript unmasked', echoed ? 'found' : 'not found')
