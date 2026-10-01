@@ -13,6 +13,12 @@ each frame is generated with a reference image chained off the previous one.
     python scripts/mascot.py --style <img> # art-direction reference for the base frame
     python scripts/mascot.py --raw <new> --rebase <old>   # redesign, keep the poses
 
+The raw frames are the only expensive artefact and they are NOT in the git repo: they
+live in the maintainer's archive at `D:\MacShare\waaagh-art\frames` (kept out of the
+repo because they are ~3MB of 1024px PNGs). Point `WAAAGH_RAW_DIR` there, or pass
+`--raw`, or the frames have to be generated again — the Ark account was overdue the
+last time that mattered.
+
 Frames are drawn on a flat magenta background (the model honours that reliably),
 keyed out here by hue, cropped, fitted to one 128x160 frame and quantised. The
 strips are what the plugin ships; `--raw` re-derives them without spending API
@@ -96,6 +102,20 @@ PROMPTS = {
     "work5": WORK + "姿势：两只手同时砸在键盘上，身体往下压，嘴巴张到最大，桌上的水杯被震得跳了一下。",
     "work6": WORK + "姿势：一只手还在键盘上敲、另一只手抬起来擦额头上的汗，眼睛眯起来但嘴还在喊。",
 }
+# NOT GENERATED YET — the Ark account went overdue (403 AccountOverdueError) while
+# these were being added, so the shipped art stops at the six work frames above. They
+# are kept here as the next step, and the plugin compensates in the meantime by
+# walking the six frames on an uneven rhythm (see the work keyframes in the client)
+# so a long turn does not read as one metronome: two quiet frames would make it better
+# still, and the icon below could then come from a purpose-drawn head instead of a
+# crop of the idle strip.
+#
+#   "work7": WORK + "姿势和参考图完全一样，但把嘴巴闭上、嘴唇抿紧，眼睛盯着屏幕、眉毛压低，一副拼命专注的"
+#   "样子，把头上的汗珠全部去掉。",
+#   "work8": WORK + "姿势和参考图完全一样，但嘴巴闭紧咬着牙（两颗獠牙露在嘴唇外面）、眼睛瞪大盯着屏幕，"
+#   "额头和脑袋旁边冒出几滴汗珠。",
+#   "icon1": LINE + CHARACTER + "只画这个兽人的头部特写：正面、大头、占满画面，不画身体、不画手臂、"
+#   "不画任何背景物体；表情是压低眉毛、瞪着眼睛的凶相，嘴巴咧开露出獠牙。" + FRAMING,
 # The idle base settles the design; work1 hangs off it so the Ork at the desk is the
 # same Ork, and the rest of the work frames hang off work1 to keep the desk fixed.
 REFERENCES = {
@@ -312,7 +332,9 @@ def main() -> None:
     parser.add_argument("--rebase", type=pathlib.Path, help="re-edit these saved frames in place (pose preserved)")
     args = parser.parse_args()
 
-    default_raw = pathlib.Path(os.environ.get("TEMP", "/tmp")) / "waaagh-mascot-raw"
+    default_raw = pathlib.Path(
+        os.environ.get("WAAAGH_RAW_DIR") or (pathlib.Path(os.environ.get("TEMP", "/tmp")) / "waaagh-mascot-raw")
+    )
     raw = args.raw or default_raw
     raw.mkdir(parents=True, exist_ok=True)
 

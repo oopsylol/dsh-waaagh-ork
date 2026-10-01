@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.17.0 (2026-09-30)
+
+The six follow-ups from the audit, all attempted. One of them came back negative and is
+recorded as such, and the Ark account ran out of credit partway through, which changed
+how two of them had to be done.
+
+- **A behaviour smoke test finally exists** (`scripts/smoke.mjs`, `pnpm run smoke`).
+  Every live check until now was a throwaway script; this one is committed and asserts
+  the things only a running instance can answer: the waiting strip is the 3-frame sit,
+  a turn switches to the 6-frame keyboard, the mascot stays clear of the bubble, the
+  bubble has no tail image, **the draft is left exactly as typed**, the message reaches
+  the transcript unmasked, and the console is clean. Playwright is deliberately NOT a
+  dependency (it drags browsers in), so the script finds a local one, or skips with exit
+  0 — CI stays green either way. Ran against a live instance: 11/11 checks passed.
+- **The raw frames are archived** at `D:\MacShare\waaagh-art\frames` (9 frames, 3MB) —
+  kept out of the repo because of their size, reachable through `WAAAGH_RAW_DIR`, and
+  documented in `mascot.py` and the README. This turned out to matter within the hour:
+  the Ark account went overdue mid-round, so the archived frames are now the only way
+  to rebuild the strips without paying for them again.
+- **The work loop breathes.** Six frames on an uneven rhythm instead of a metronome:
+  hammering beats take 9-11% of the loop and the two beats that read as effort — the
+  yell and the wipe across the forehead — hold about twice as long.
+- **The line-art icon was tried, measured, and reverted.** Item 3 asked for the 16px
+  icon to match the mascot's style. Cropping the head out of the idle strip does that,
+  and at 16px it is a green blob: the eyes vanish, and neither a bolden pass (push the
+  darks to ink, the wash to green) nor a drop to 8 colours recovered them. The hand-drawn
+  pixel head is the better icon at that size, so it stays, and a purpose-drawn
+  high-contrast head — `icon1`, already written in `mascot.py` — is the real fix once
+  generation is possible again. The comparison is in the commit that tried it.
+- **Removed the `package.json.bak-waaagh`** I left in the desktop profile on the day the
+  plugin was first installed there.
+- **Documented the `link:` trap**: the desktop and CLI profiles load this working copy
+  directly, so moving or deleting the folder breaks the plugin. The README says so next
+  to the install line.
+- Two quiet "focused, mouth closed" work frames were written and parked in `mascot.py`
+  (commented) for the same reason as the icon: the Ark account is overdue.
+
 ## 0.16.3 (2026-09-30)
 
 An independent read-only audit of the repo (a second agent, grepping the *installed*

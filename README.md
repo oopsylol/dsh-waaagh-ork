@@ -79,6 +79,8 @@ dsh plugin --profile web add dsh-waaagh-ork
 dsh plugin --profile web add link:/path/to/dsh-waaagh-ork
 ```
 
+> 桌面版/CLI 都是按这个 `link:` 直接读工作副本的——**移动或删除这个目录，插件就加载失败**。想固定住就把仓库放到一个长期不动的路径，或者改用 `file:` 装一份副本。
+
 ## 开发
 
 源码在 `src/`，`lib/` 与 `src/assets/` 里的 PNG 都是**提交进仓库的生成产物**——DSH 在安装插件时不会构建任何东西，运行时直接读 `lib/client.js`，所以产物必须入库；但产物一律由生成器产出，不允许手改。
@@ -86,11 +88,19 @@ dsh plugin --profile web add link:/path/to/dsh-waaagh-ork
 ```sh
 pnpm install          # 安装 esbuild / typescript 与 DSH 类型契约包
 pnpm run typecheck    # tsc --noEmit，对真实 .d.ts 检查插槽名、props、选择器字段
-pnpm run sprite       # scripts/sprite.mjs → src/assets/ork-open.png（图标用的大头）
-pnpm run check-assets # 校验三张精灵图的尺寸/帧数契约（128×160 × 帧）
+pnpm run check-assets # 校验三张精灵图的尺寸/帧数契约（128×160 × 帧 / 图标 144×144）
 pnpm run build        # src/ → lib/index.js（host）+ lib/client.js（浏览器半）
-pnpm run verify       # = typecheck + sprite + check-assets + build，然后校验 lib/ 与重新生成的 ork-open.png 没有漂移
+pnpm run verify       # = typecheck + check-assets + build，再校验 lib/ 没有漂移
+pnpm run smoke        # 对运行中的实例做行为回归（见下），没给 URL 或没装 Playwright 就跳过
 ```
+
+`pnpm run smoke` 需要 Playwright（**不是**本包依赖，避免顺带装浏览器）和一个跑着的实例：
+
+```sh
+DSH_SMOKE_URL='http://127.0.0.1:PORT/?token=...' pnpm run smoke
+```
+
+它断言的是**只有真跑起来才知道的事**：待机是 3 帧坐姿、干活切到 6 帧键盘、兽人不压住输入框、**草稿原样保留且原样送达**、控制台零报错。
 
 **吉祥物是 AI 生成的**（`scripts/mascot.py`）：本机没有可用的国内生图 skill（小云雀要 `XYQ_ACCESS_KEY`，SpriteCook 要它自己的 MCP 服务端），但用户环境里已经有**火山方舟**凭据，于是走 `doubao-seedream-4-0` 的 `images/generations`：
 
@@ -124,20 +134,23 @@ python scripts/mascot.py --raw <新目录> --rebase <旧目录>         # 只改
 | --- | --- | --- | --- |
 | `ork-idle.png` | 128×160 ×3 帧 | 等待：坐在地上挠肚子傻笑 + 眨眼过渡帧 | `scripts/mascot.py`（AI 生成） |
 | `ork-work.png` | 128×160 ×6 帧 | 干活：蹲在笔记本前拼命敲键盘、甩汗、张嘴吼 | 同上 |
-| `ork-open.png` | 144×144 | 16px 图标用的大头（工具行 / 运行行 / 过程行） | `scripts/sprite.mjs`（手绘） |
+| `ork-open.png` | 144×144 | 16px 图标用的大头（工具行 / 运行行 / 过程行） | `scripts/sprite.mjs`（**手绘像素画**）|
 
-两套模组由 `<html>` 上的 **`data-waaagh-running=on`** 切换（回合开始就打上），CSS 里只换 `background-image` 和翻帧动画：**待机 3 帧 / 5 秒一轮**（眨眼滚动），**干活 6 帧 / 0.7 秒一轮**。帧数不是随手定的：3 帧的循环肉眼就是"闪"，6 帧才够表现出"交替砸键盘"。
+> **16px 图标为什么还是手绘像素画**：试过把它也换成线条画（从待机雪碧图里量出头身比例裁头），在 16px 下实测是一团糊，加粗暗部、砍到 8 色都救不回来——这个尺寸需要**专门画一个高对比大头**，等生图额度恢复后按 mascot.py 里已经写好的 icon1 提示词生成即可。线条画版本的对比图在同批提交的说明里。
 
-多帧动画都拼成**竖直雪碧图**，CSS 只放一个 URL，用 `background-position` 走几步切帧。手绘那张 `node scripts/sprite.mjs --dump` 会打成 ASCII 像素图（`.` 透明、其余是调色板索引）——之前那几轮手绘的 bug 都是靠它定位的。手绘 PNG 用**无压缩 DEFLATE 块 + 自写 CRC/Adler** 编码，字节跨平台一致，所以 CI 能像校验 `lib/` 一样校验它没有漂移；AI 生成的两条雪碧图需要 API 额度，CI 改为校验尺寸契约。
+
+两套模组由 `<html>` 上的 **`data-waaagh-running=on`** 切换（回合开始就打上），CSS 里只换 `background-image` 和翻帧动画：**待机 3 帧 / 5 秒一轮**（眨眼滚动），**干活 6 帧 / 1.1 秒一轮，但节奏不均匀**——敲击帧各占 9–11%，"喊"和"擦汗"两帧各占两倍时长，长回合才不会变成节拍器。
+
+多帧动画都拼成**竖直雪碧图**，CSS 只放一个 URL，用 `background-position` 走几步切帧。**原始帧（1024² 的 9 张）不在仓库里**（约 3MB），归档在维护者机器的 `D:\MacShare\waaagh-art\frames`（`WAAAGH_RAW_DIR` 指过去就能离线重建雪碧图，否则要重新花额度生成）。
 
 | 路径 | 作用 |
 | --- | --- |
 | `src/client/index.ts` | 浏览器半：插槽注册、绿皮头像、输入/输出遮罩、运行提示 |
 | `src/host/index.ts` | Node 半：有意的空实现，只为让 Loader 条目能激活 |
-| `src/assets/*.png` | 精灵图（手绘图标 + AI 生成的吉祥物），构建时内联成 data URL |
-| `scripts/sprite.mjs` | 手绘图标头：像素画 + 确定性 PNG 编码 + `--dump` 像素图 |
+| `src/assets/*.png` | 精灵图（两条 AI 雪碧图 + 裁出来的图标），构建时内联成 data URL |
 | `scripts/mascot.py` | AI 生成吉祥物：调火山方舟 doubao-seedream、抠品红背景、拼雪碧图 |
 | `scripts/check-assets.mjs` | 校验三张图的尺寸/帧数契约 |
+| `scripts/smoke.mjs` | 对运行中的实例做行为回归（切换、草稿不变、零报错） |
 | `scripts/build.mjs` | esbuild 构建：host 出 ESM，浏览器半出「懒 CJS 工厂注册」包 |
 | `lib/` | 构建产物，`lib/client.js` 由 `dsh-client-modules` 通过 `/plugins` 提供给页面 |
 

@@ -2,7 +2,7 @@
  * Asserts the shipped sprite geometry.
  *
  * The stylesheet depends on it: the strips are walked with `background-position`
- * over frames of exactly 128x160, and the icon head is drawn once. A truncated or
+ * over frames of exactly 128x160, and the icon is a single 144x144 frame. A truncated or
  * regenerated-at-the-wrong-size asset would otherwise fail silently on screen.
  */
 import { readFileSync } from 'node:fs'
