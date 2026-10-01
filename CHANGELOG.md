@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.14.0 (2026-09-30)
+
+More Ork: bigger tusks, meaner eyebrows, and a heavier greenskin build.
+
+- **Tusks and brows turned up**: two thick tusks that now stand taller than the
+  mouth and curl outward, plus eyebrows that are thick, heavy and slanted down
+  toward the middle, with the upper eyelid pinched under them.
+- **More Ork, same charm**: a wider, jutting jaw, a slight hunch with the head
+  pushed forward, broad shoulders, long thick arms with big knuckled hands, a wider
+  flatter nose, and a fully saturated green skin.
+- **The build had to be held back twice.** "Sturdy Ork" produced a bodybuilder; the
+  fix was naming the failure modes ("不是人类小孩、也不是肌肉壮汉", "肚子又圆又鼓",
+  "绝对不要画胸肌、腹肌或任何肌肉线条"). The body stays three-heads-tall with a round
+  belly, which is where the cute half of "凶一点的萌" lives.
+- **"Deep saturated green" came back as dark teal with heavy shading**, and the wash
+  skipped it: the classifier tested brightness, and the skin measured hue 0.35-0.58
+  at value 0.2-0.4. It now finds skin by hue and saturation instead — ink is what is
+  dark *and* neutral — and pulls every skin pixel 0.75 toward one flat Ork green.
+  That also flattens the volume shading the model likes to add on bellies and arms,
+  which is what the line-art style wants anyway.
+- Verified in the built strips: skin reads as one flat green across all 30 frames,
+  ink and the pale props stay put. Assets 276KB → 245KB, bundle 403KB → 360KB.
+
 ## 0.13.0 (2026-09-30)
 
 The line-art style stayed; the character was wrong. "太小孩，不太兽人" — he read as a

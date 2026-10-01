@@ -50,14 +50,17 @@ LINE = (
     "眼睛画得特别大又圆、瞳孔是很小的黑点，表情呆萌可爱。"
 )
 CHARACTER = (
-    "角色：一只可爱的兽人小子（Warhammer 40k greenskin），**不是人类小孩、也不是肌肉壮汉**——"
-    "三头身，**脑袋又大又方**，身体**圆滚滚但结实**（有肚子，没有胸肌腹肌）；"
-    "**下颚宽大、明显向前突**，**两颗粗大的獠牙从下颚向上翘出嘴外**，嘴角还露两颗方牙；"
-    "**眉骨厚重、眉毛压低斜向中间**，眼睛又大又圆（眼白大、瞳孔小而黑）、带一点凶相；"
-    "鼻子扁而宽、两个鼻孔清楚；耳朵又长又尖、向外撇；头顶一撮呆毛；"
-    "脖子上一条简单的皮项圈、腰上一条简单腰带（方形扣）、脚上一双简单的厚靴子、"
-    "一边肩膀上挂一块简单的小护肩——这些都用线条画，不要画金属反光和渐变。"
-    "皮肤上是**明显的绿色**平涂，裤子深棕色，其余留白。"
+    "角色：一只**兽人小子**（Warhammer 40k greenskin）——**兽人特征要非常明显**，绝对不要像人类小孩："
+    "脑袋又大又方，**下颚极宽、明显向前突出**，嘴巴很宽；"
+    "**两颗又大又粗的獠牙从下颚两侧向上翘出嘴外**，獠牙比嘴巴还高、又长又尖还带弧度，"
+    "嘴角另外露出一排方牙；**眉毛又粗又浓、狠狠压低到眼睛上方、眉尾向中间下斜**，一脸凶相；"
+    "眼睛又大又圆（眼白大、瞳孔小），上眼睑被粗眉毛压住一点；"
+    "鼻子扁而塌、鼻孔大而外翻；耳朵又长又尖、向两侧斜伸；头顶一撮硬邦邦的莫西干呆毛；"
+    "**微微驼背、脑袋往前伸**，肩膀宽厚、**手臂粗壮、比腿略长**、手掌大、指节粗；"
+    "皮肤是**饱和的深绿色**平涂。脖子上一条简单的皮项圈、腰上一条简单腰带（方形扣）、"
+    "脚上一双简单的厚靴子、一边肩膀上挂一块简单的小护肩——都用线条画，不要金属反光和渐变。"
+    "身体保持**圆滚滚的三头身**：**肚子又圆又鼓**，"
+    "**绝对不要画胸肌、腹肌或任何肌肉线条**，身体只有外轮廓线加一层平涂色，不要用灰色阴影表现体积。"
     "**务必保持线条画风：不画肌肉线条、不画渐变和阴影、不做写实渲染。**"
 )
 FRAMING = (
@@ -283,7 +286,7 @@ def drop_speckles(image: Image.Image) -> Image.Image:
     return out
 
 
-WASH = (211, 232, 196)  # the pale green every frame's skin is pulled to
+WASH = (150, 200, 110)  # the pale green every frame's skin is pulled to
 
 
 def _blend(pixel: tuple, target: tuple, strength: float) -> tuple:
@@ -315,12 +318,17 @@ def apply_wash(image: Image.Image) -> Image.Image:
             if a == 0:
                 continue
             hue, saturation, value = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-            if value < 0.5:
-                continue  # ink and shading
-            greenish = 0.15 <= hue <= 0.45 and saturation > 0.08
+            if saturation < 0.2 and value < 0.5:
+                continue  # ink outlines: dark *and* neutral
+            # Skin ranges from a pale green to a dark teal-green depending on the
+            # frame (measured hue 0.35-0.55, value 0.2-0.9), so it is found by hue and
+            # saturation rather than brightness, and pulled hard toward one flat
+            # Ork green — which also flattens the volume shading the model likes to
+            # add on the belly and arms, exactly as the line-art style wants.
+            greenish = 0.34 <= hue <= 0.58 and saturation > 0.2
             papery = saturation <= 0.08 and value > 0.78
             if greenish:
-                pixels[x, y] = _blend((r, g, b, a), WASH, 0.7)
+                pixels[x, y] = _blend((r, g, b, a), WASH, 0.75)
             elif papery:
                 pixels[x, y] = _blend((r, g, b, a), WASH, 0.75)
     return out
