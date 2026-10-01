@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Builds the mascot sprites (`src/assets/ork-idle.png`, `ork-shout.png`).
+"""Builds the mascot sprites (`src/assets/ork-idle.png`, `ork-work.png`).
 
 The Ork is drawn by Volcano Ark's `doubao-seedream-4-0` image model rather than
 by hand: the hand-drawn version in `scripts/sprite.mjs` kept losing the likeness
 at mascot size, and the model keeps one character consistent across poses when
-each frame is generated with the first frame as a reference image.
+each frame is generated with a reference image chained off the previous one.
 
     export ARK_API_KEY=...            # or set it in the user environment
-    python scripts/mascot.py          # generate the five frames, then build strips
+    python scripts/mascot.py          # generate the 9 frames, then build the 2 strips
 
     python scripts/mascot.py --raw <dir>   # rebuild the strips from saved frames
+    python scripts/mascot.py --style <img> # art-direction reference for the base frame
+    python scripts/mascot.py --raw <new> --rebase <old>   # redesign, keep the poses
 
 Frames are drawn on a flat magenta background (the model honours that reliably),
 keyed out here by hue, cropped, fitted to one 128x160 frame and quantised. The

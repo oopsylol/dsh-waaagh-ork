@@ -15,16 +15,12 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run typecheck
-      - run: pnpm run sprite
-      - run: pnpm run check-assets
-      - run: pnpm run build
-      # lib/ and the hand-drawn icon head are committed because the runtime never
-      # builds a plugin: a bundle or sprite that drifted from its generator must
-      # fail here (the sprite writer emits stored DEFLATE, so its bytes are
-      # stable). The two mascot strips are generated art — scripts/mascot.py needs
-      # an Ark API key, so they are checked for geometry instead of drift.
-      - run: git diff --exit-code -- lib src/assets/ork-open.png
+      # One source of truth: `verify` is typecheck + sprite + check-assets + build +
+      # the drift check on lib/ and the hand-drawn icon head (the sprite writer emits
+      # stored DEFLATE, so its bytes are stable). The two mascot strips are generated
+      # art — scripts/mascot.py needs an Ark API key — so they are checked for
+      # geometry instead of drift.
+      - run: pnpm run verify
       - run: node --check lib/client.js
       - run: node --check lib/index.js
       - run: node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"

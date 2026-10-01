@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.16.3 (2026-09-30)
+
+An independent read-only audit of the repo (a second agent, grepping the *installed*
+0.2.0 bundles rather than trusting the comments) plus my own sweep. The "never touch
+the composer draft" contract was confirmed intact, and everything below is either a
+selector that can never match or a document that describes a build we no longer ship.
+
+- **A rule that could never match**: `[data-waaagh-run-label] > span[class*=Clock]`
+  existed to keep the elapsed time readable. Verified in 0.2.0's ui-chat bundle: the
+  only `Clock` names are `formatMessageClock` (message timestamps) and an icon, and
+  the label and timer share one TextShimmer text span — so the mask covers both and
+  the rule was dead. Deleted.
+- **`[data-text-shimmer]` fallback deleted** from `findRunningLabel`: zero occurrences
+  in either target build. The `runningText` class token (hashed but stable) is what
+  actually matches, and it is tried first.
+- **The mascot is re-measured after a layout switch.** `ResizeObserver` was bound to
+  the composer card node captured at mount; the hero composer and the session
+  composer are different elements, so after a session switch the observer watched a
+  detached node and the mascot could stay at its 76px floor until a window resize. It
+  now re-targets an unconnected card and re-fits, and a turn start re-fits on the next
+  frame as well.
+- **Observer cost**: `characterData` dropped from the document observer — every
+  streamed token used to fire the callback and the layout reads behind it for nothing.
+- **Attribute hygiene**: the celebration flag is consumed (a composer remount while
+  idle could flash the starburst again), `data-waaagh` is now either `revealed` or
+  absent instead of a `masked` value nothing matched, `data-waaagh-send` is cleared on
+  dispose, and the decorative `title` is gone from an `aria-hidden` div.
+- **Docs caught up**: the README still documented the deleted `data-waaagh-idle` /
+  `data-waaagh-set` switch and a 5-frame/350ms work strip, claimed "30 frames → 7
+  strips" and 0.1.7-rc.2 type contracts, and misdescribed CI's pathspec; the sprite and
+  mascot generator docstrings still named files that no longer exist. All corrected,
+  and the README now has screenshots (`docs/`) — it was a mascot plugin with no
+  pictures in it.
+- **Packaging**: `engines.node >= 20` and `packageManager` added, and CI now calls
+  `pnpm run verify` instead of re-listing its steps, so the two cannot drift.
+- **Dev-dependency pruning was tried and reverted.** The audit was right that 21 of the
+  `@deepseek-ai/*` devDependencies are never imported by name, and pruning them looked
+  like a free win — but `tsc` failed with `Property 'useSession' does not exist on
+  Partial<PropsRuntime<"conversation.input.left">>`: several of those packages carry
+  *declaration merging* for the slot contract, so they are load-bearing for the
+  typecheck even though no `import` mentions them. Worth knowing before someone tries
+  it again; the full list stays.
+- Verified: `pnpm run verify` green, `pnpm install --frozen-lockfile` green, and a live
+  run still reports idle 3-frame/5s + work 6-frame/0.7s with no console errors.
+
 ## 0.16.2 (2026-09-30)
 
 A sweep for what the refactors left behind. Nothing here is visible on screen except

@@ -211,7 +211,11 @@ const CSS = [
   '[data-waaagh-run-label]{font-size:0!important;background:none!important;animation:none!important;-webkit-text-fill-color:currentColor!important}',
   '[data-waaagh-run-label] *{background:none!important;-webkit-text-fill-color:currentColor!important}',
   `[data-waaagh-run-label]::before{content:var(--waaagh-running,"Waaaaaaagh!!!");font-size:14px;font-weight:400;color:${GREEN};-webkit-text-fill-color:currentColor}`,
-  '[data-waaagh-run-label] > span[class*=Clock]{font-size:13px!important;color:var(--dsw-alias-label-caption);-webkit-text-fill-color:currentColor;margin-left:8px}',
+  /* There was a rule here that kept the elapsed-time span readable by selecting
+     `> span[class*=Clock]`. 0.2.0's running row has no Clock class at all — the only
+     Clock names in its bundle are `formatMessageClock` (message timestamps) and an
+     icon — and the label and the timer share one TextShimmer text span, so the mask
+     covers both. Deleted rather than left as a selector that can never match. */
   /* Output mask: hide assistant thinking + prose */
   'html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step] > *{display:none!important}',
   'html:not([data-waaagh=revealed]) [data-variant=think]{display:none!important}',
@@ -222,7 +226,7 @@ const CSS = [
   '@keyframes waaagh-grow{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}',
   `html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]:has([data-streaming])::before{content:var(--waaagh-stream,"Waaaaaaaaaaaaaaagh!!!");white-space:nowrap;animation:waaagh-grow 1.6s steps(14,end) infinite,waaagh-shout .34s ease-in-out infinite alternate}`,
   /* ── process-row leading icons → green Ork (tool/context/compaction) ─ */
-  `.waaagh-tool-icon{display:inline-block;width:16px;height:16px;flex:none;background:url("${orkOpen}") center/contain no-repeat}`,
+  `.waaagh-tool-icon{display:inline-block;width:16px;height:16px;flex:none;background:url("${orkOpen}") center/contain no-repeat!important}`,
   `[data-chat-flow-kind=tool-call] [class*=leading]{position:relative;width:16px;height:16px;flex:none;background:url("${orkOpen}") center/contain no-repeat!important;animation:waaagh-dakka .5s cubic-bezier(.2,1.5,.4,1) 1}`,
   '[data-chat-flow-kind=tool-call] [class*=leading] svg,[data-chat-flow-kind=tool-call] [class*=leading] > *{visibility:hidden!important}',
   `[data-chat-flow-kind=context] [class*=leading]{position:relative;width:16px;height:16px;flex:none;background:url("${orkOpen}") center/contain no-repeat!important;animation:waaagh-dakka .5s cubic-bezier(.2,1.5,.4,1) 1}`,
@@ -288,10 +292,16 @@ function randomBellow(minAs = 2, spread = 30): string {
 // ── global output-mask state (one toggle across sessions) ─────────────────────
 let outputRevealed = false
 const outputListeners = new Set<(value: boolean) => void>()
+/**
+ * Flip the mask. Every selector tests `:not([data-waaagh=revealed])`, so "masked" is
+ * the absence of the attribute rather than a value: writing `data-waaagh="masked"`
+ * matched nothing, and there was nothing to clean up on unmount either.
+ */
 function setOutputRevealed(value: boolean): void {
   outputRevealed = value
   if (typeof document !== 'undefined') {
-    document.documentElement.dataset.waaagh = value ? 'revealed' : 'masked'
+    if (value) document.documentElement.dataset.waaagh = 'revealed'
+    else delete document.documentElement.dataset.waaagh
   }
   for (const listener of outputListeners) listener(value)
 }
@@ -368,16 +378,14 @@ function clearRunningLabel(): void {
  * @returns the label element, or null when no running label is on screen.
  */
 function findRunningLabel(): Element | null {
-  // Newest layout: the dedicated running indicator. 0.2.0 renamed the shimmer's
-  // marker (`data-shimmer`) and moved the text into an inner span, so match the
-  // hash-suffixed `runningText` class first — it survives both revisions — and
-  // keep the two attribute markers as fallbacks.
+  // Newest layout: the dedicated running indicator. The hash-suffixed `runningText`
+  // class is what actually matches in 0.2.0 (verified in its ui-chat bundle), so it
+  // goes first; `data-shimmer` is the marker that build documents even though its
+  // bundle only emits `data-shimmer-decoration`. `data-text-shimmer` used to be the
+  // third link and is gone: it occurs zero times in either target build.
   for (const el of document.querySelectorAll('[data-chat-running]')) {
     if (el.getBoundingClientRect().height <= 4) continue
-    const label =
-      el.querySelector('[class*=runningText]') ??
-      el.querySelector('[data-shimmer]') ??
-      el.querySelector('[data-text-shimmer]')
+    const label = el.querySelector('[class*=runningText]') ?? el.querySelector('[data-shimmer]')
     if (label !== null) return label
   }
   // ≤0.1.6: the visible polite live region IS the running label.
@@ -470,8 +478,22 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     const resize = (): void => fitMascot(orcRef.current)
     resize()
     window.addEventListener('resize', resize)
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize)
-    const card = document.querySelector('[data-composer-card]')
+    // The composer card is not a stable node: the hero composer and the session
+    // composer are different elements, so an observer bound to the node that existed
+    // at mount stops firing after a session switch and the mascot stays at its 76px
+    // floor. Re-target whenever the current card is no longer connected.
+    let card = document.querySelector('[data-composer-card]')
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      if (card !== null && !card.isConnected) {
+        const next = document.querySelector('[data-composer-card]')
+        if (next !== null && observer !== null) {
+          observer.disconnect()
+          observer.observe(next)
+          card = next
+        }
+      }
+      resize()
+    })
     if (observer !== null && card !== null) observer.observe(card)
     return () => {
       window.removeEventListener('resize', resize)
@@ -497,6 +519,10 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     burstWord = randomBellow(2, 6)
     hasRun = true
     markRunningLabel()
+    // The composer switches layout for a turn (hero card → session card), so the
+    // mascot's width and offset are re-measured once the new layout has painted.
+    const frame = requestAnimationFrame(() => fitMascot(orcRef.current))
+    return () => cancelAnimationFrame(frame)
   }, [running])
 
   // The turn landing is worth a WAAAGH: the bellow hangs in a starburst beside him
@@ -504,6 +530,9 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   React.useEffect(() => {
     if (running || typeof document === 'undefined') return
     if (!hasRun) return
+    // Consume the flag: without this, re-mounting the composer while idle (a session
+    // switch) fires the celebration again even though no turn just ended.
+    hasRun = false
     const root = document.documentElement
     root.dataset.waaaghCheer = 'on'
     root.style.setProperty('--waaagh-bellow', JSON.stringify(burstWord))
@@ -518,7 +547,6 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     }
   }, [running])
 
-  // While running: flag the document, swap the composer placeholder for a
   // While running: flag the document, swap the composer placeholder for a
   // cycling Ork word (through a CSS variable, so React's own placeholder render
   // is never fought) and turn the running label into "Waaaaaaagh!!!".
@@ -551,9 +579,9 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     {
       ref: orcRef,
       className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
-      // The custom avatar feeds the idle head layer's variable.
+      // The custom avatar feeds the idle head layer's variable. Decorative only, so
+      // no title (it is aria-hidden and pointer-events:none).
       style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
-      title: 'WAAAGH',
       'aria-hidden': true
     },
     // The one strip. Which drawing it shows is the stylesheet's call: sitting by
@@ -732,7 +760,10 @@ export function apply(ctx: Context): void {
       // The running label is re-rendered as the turn streams; re-locate it.
       scheduleMarkRunningLabel()
     })
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true })
+    // `characterData` is deliberately NOT observed: every streamed token used to
+    // fire this callback (and the layout reads behind it) for nothing. Added nodes
+    // are what matter, and only childList reports those.
+    observer.observe(document.body, { childList: true, subtree: true })
     markRunningLabel()
     return () => {
       clearTimeout(barkTimer)

@@ -1,8 +1,10 @@
 /**
- * Generates the mascot sprites in `src/assets/`:
+ * Generates the one hand-drawn sprite in `src/assets/`:
  *
- *   ork-open.png / ork-closed.png    the idle head (blink pair)
- *   ork-shout-1..3.png               the full-body Ork, shouting loop
+ *   ork-open.png    the 16px icon head used in tool / running / process rows
+ *
+ * The mascot beside the composer is generated art instead: `scripts/mascot.py`
+ * writes `ork-idle.png` (waiting) and `ork-work.png` (working).
  *
  * Everything is drawn on a small pixel grid with hard edges — real pixel art,
  * with shading and the ink outline derived from the silhouette rather than
@@ -387,9 +389,9 @@ if (process.argv[2] === '--dump') {
 }
 
 // Only the 16px icon art is drawn by hand now. The mascot itself is generated
-// art: scripts/mascot.py builds ork-idle.png and ork-shout.png in this same
+// art: scripts/mascot.py builds ork-idle.png and ork-work.png in this same
 // directory, with one image-model call per frame and the character kept
-// consistent by feeding each new frame the first one as a reference.
+// consistent by feeding each new frame a reference image.
 const { width, height, out: pixels } = upscale(drawHead(false), 3)
 const png = encodePng(width, height, pixels)
 writeFileSync(join(assets, 'ork-open.png'), png)

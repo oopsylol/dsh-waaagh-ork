@@ -8,6 +8,14 @@ WAAAGH! —— 给 DSH 加一个绿皮兽人，把写代码变成兽人式咆哮
 
 插件**不碰输入框里的草稿**：你输入什么、发出去的就是什么，模型收到的永远是原文。
 
+## 长啥样
+
+![整体效果：过程行图标换成绿皮，助手输出被换成绿色 Waaaaaaagh（点一下看原文）](docs/look.png)
+
+| 等待时 | 干活时 |
+| --- | --- |
+| ![等待：一屁股坐在地上挠肚子](docs/waiting.png) | ![干活：蹲在笔记本前拼命敲键盘、甩汗、张嘴吼](docs/working.png) |
+
 ## 特性
 
 - 绿色皮肤：输入框变成**漫画对话泡泡**（粗墨线 + 硬投影），主发送按钮是绿色 `Waaagh!` 药丸。
@@ -34,10 +42,10 @@ WAAAGH! —— 给 DSH 加一个绿皮兽人，把写代码变成兽人式咆哮
 
 | 运行形态 | DSH 版本 | 状态 |
 | --- | --- | --- |
-| `dsh web`（浏览器） | 0.1.6-alpha.2 及以上 | ✅ |
-| DSH Desktop（Electron 桌面版，自带 0.1.7-rc.2） | 0.1.7-rc.2 | ✅ |
+| `dsh web` / CLI（浏览器） | 0.1.6-alpha.2 及以上 | ✅ |
+| DSH Desktop（Electron 桌面版，打包 0.2.0-rc.2 客户端） | 0.2.0-rc.2 | ✅ |
 
-0.1.6 / 0.1.7 把输入框换成了 Lexical 富文本、把提交入口从插槽 action 移到了 composer 自己的键盘面、并把运行中提示从「可见的 live region」挪进了当前回合的过程行——插件已按这些变化改写，同时对老结构保留兼容分支。
+0.1.6 / 0.1.7 把输入框换成了 Lexical 富文本、把提交入口从插槽 action 移到了 composer 自己的键盘面、并把运行中提示从「可见的 live region」挪进了当前回合的过程行；0.2.0 又把 `TextShimmer` 的标记从 `data-text-shimmer` 换成 `data-shimmer`、并把文本挪进内层 span（所以运行行是按 `runningText` 类名兜底定位的）。插件已按这些变化改写，同时对老结构保留兼容分支。
 
 ## 安装
 
@@ -81,17 +89,21 @@ pnpm run typecheck    # tsc --noEmit，对真实 .d.ts 检查插槽名、props�
 pnpm run sprite       # scripts/sprite.mjs → src/assets/ork-open.png（图标用的大头）
 pnpm run check-assets # 校验三张精灵图的尺寸/帧数契约（128×160 × 帧）
 pnpm run build        # src/ → lib/index.js（host）+ lib/client.js（浏览器半）
-pnpm run verify       # typecheck + sprite + check-assets + build，并校验 lib/ 与 ork-open.png 没有漂移
+pnpm run verify       # = typecheck + sprite + check-assets + build，然后校验 lib/ 与重新生成的 ork-open.png 没有漂移
 ```
 
 **吉祥物是 AI 生成的**（`scripts/mascot.py`）：本机没有可用的国内生图 skill（小云雀要 `XYQ_ACCESS_KEY`，SpriteCook 要它自己的 MCP 服务端），但用户环境里已经有**火山方舟**凭据，于是走 `doubao-seedream-4-0` 的 `images/generations`：
 
 ```sh
 # ARK_API_KEY / ARK_BASE_URL / VOLC_IMAGE_MODEL 从环境读取；密钥不会被打印
-python scripts/mascot.py                       # 生成 30 帧 → 组装 7 条雪碧图
+python scripts/mascot.py                       # 生成 9 帧 → 组装 2 条雪碧图
 python scripts/mascot.py --raw <dir>           # 用已保存的原图重建，不再消耗额度（CI 走这条）
 python scripts/mascot.py --style ref.png --prompts sheet.json   # 换画风：参考图 + 提示词表
+python scripts/mascot.py --raw <新目录> --rebase <旧目录>         # 只改角色设计，保留姿势
 ```
+
+> **原图没有进仓库**（体量大且在 `%TEMP%`），只有拼好的雪碧图是提交产物。要重新编辑某一帧时，
+> 手上没有 `<dir>` 就只能重新生成；想长期保留就把 `--raw` 指到仓库外的固定目录。
 
 **画风是"线条画"**：粗黑手绘线条、大量留白、极少平涂色，眼睛画得特别大、瞳孔是很小的黑点。做法上有三处工程处理，都是为了"看起来像一个人画的"：
 
@@ -114,7 +126,7 @@ python scripts/mascot.py --style ref.png --prompts sheet.json   # 换画风：�
 | `ork-work.png` | 128×160 ×6 帧 | 干活：蹲在笔记本前拼命敲键盘、甩汗、张嘴吼 | 同上 |
 | `ork-open.png` | 144×144 | 16px 图标用的大头（工具行 / 运行行 / 过程行） | `scripts/sprite.mjs`（手绘） |
 
-模组由 `<html>` 上的 `data-waaagh-idle` / `data-waaagh-set` 选择，CSS 里每套只换 `background-image`；帧数统一（待机 3 帧、干活 5 帧）所以两套翻帧动画共用 keyframes。帧数不是随手定的：3 帧的循环肉眼就是"闪"，5 帧 + 每帧 350ms 才像在动。
+两套模组由 `<html>` 上的 **`data-waaagh-running=on`** 切换（回合开始就打上），CSS 里只换 `background-image` 和翻帧动画：**待机 3 帧 / 5 秒一轮**（眨眼滚动），**干活 6 帧 / 0.7 秒一轮**。帧数不是随手定的：3 帧的循环肉眼就是"闪"，6 帧才够表现出"交替砸键盘"。
 
 多帧动画都拼成**竖直雪碧图**，CSS 只放一个 URL，用 `background-position` 走几步切帧。手绘那张 `node scripts/sprite.mjs --dump` 会打成 ASCII 像素图（`.` 透明、其余是调色板索引）——之前那几轮手绘的 bug 都是靠它定位的。手绘 PNG 用**无压缩 DEFLATE 块 + 自写 CRC/Adler** 编码，字节跨平台一致，所以 CI 能像校验 `lib/` 一样校验它没有漂移；AI 生成的两条雪碧图需要 API 额度，CI 改为校验尺寸契约。
 
@@ -131,7 +143,7 @@ python scripts/mascot.py --style ref.png --prompts sheet.json   # 换画风：�
 
 关于浏览器半的产物格式：DSH 以经典脚本方式加载每个插件的客户端包，脚本必须调用 `window.__ModuleLoader__.load({ id, factory })` 注册一个惰性 CJS 工厂，工厂体拿到的 `require` 是 shell 的冻结模块表（`react` 属于平台种子，必须保持 external）。这正是 `scripts/build.mjs` 用 banner/footer 包住 esbuild CJS 输出的原因。
 
-类型不靠猜：`@deepseek-ai/dsh-client-*` 在 npm 上带 `lib/types/**/*.d.ts`，devDependencies 里按 0.1.7-rc.2 精确锁定后，插槽名（`SlotMap` 声明合并）、seat 的标准 props（`useInput`/`useSession`/`inputActions`）、`InputState` 字段都由编译器把关——写错 slot 名或字段名会直接编译失败。CI 会跑 `typecheck` + `sprite` + `build` + `git diff --exit-code -- lib src/assets`。
+类型不靠猜：`@deepseek-ai/dsh-client-*` 在 npm 上带 `lib/types/**/*.d.ts`，devDependencies 里按 **0.2.0-rc.2** 精确锁定后，插槽名（`SlotMap` 声明合并）、seat 的标准 props（`useInput`/`useSession`/`inputActions`）、`InputState` 字段都由编译器把关——写错 slot 名或字段名会直接编译失败。CI 直接跑 `pnpm run verify`（typecheck + sprite + check-assets + build + `git diff --exit-code -- lib src/assets/ork-open.png`）。
 
 ## License
 
