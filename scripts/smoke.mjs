@@ -83,13 +83,20 @@ try {
       const orc = document.querySelector('.waaagh-orc')
       const o = orc.getBoundingClientRect()
       const c = document.querySelector('[data-composer-card]').getBoundingClientRect()
+      // Layout geometry, not the painted rect: the mascot is animated (breathe, and a
+      // 1.22x "bark" when your message lands), so `getBoundingClientRect()` reports the
+      // animated box and a scale of 1.22 looks like an 18% overlap that is not there.
+      const parent = orc.offsetParent
+      const parentLeft = parent === null ? 0 : parent.getBoundingClientRect().left
+      const laidOutRight = parentLeft + orc.offsetLeft + orc.offsetWidth
       return {
         strip: act.animationName,
         size: act.backgroundSize,
         walk: act.animationDuration,
         cardImage: card.backgroundImage,
         cardBorder: card.borderTopWidth,
-        clearsCard: Math.round(c.left - o.right)
+        clearsCard: Math.round(c.left - laidOutRight),
+        detail: `card.left=${Math.round(c.left)} laidOutRight=${Math.round(laidOutRight)} width=${orc.offsetWidth}`
       }
     })
 
@@ -122,7 +129,21 @@ try {
   check(work.size === '100% 800%', 'working strip is 8 frames', work.size)
   // He may borrow up to 10px of the card's own left padding — that is how he stays big on a
   // narrow window — and no more, because the "+" button sits further in than that.
-  check(work.clearsCard >= -12, 'the mascot overlaps the card by at most its padding', `${work.clearsCard}px`)
+  check(work.clearsCard >= -12, 'the mascot overlaps the card by at most its padding', `${work.clearsCard}px · ${work.detail}`)
+
+  // The shout bubble is up for the whole turn, not only after a click, and it cycles.
+  const bubbleText = () =>
+    page.evaluate(() => getComputedStyle(document.querySelector('.waaagh-orc'), '::after').content)
+  const firstBubble = await bubbleText()
+  check(
+    typeof firstBubble === 'string' && firstBubble !== 'none' && firstBubble.length > 4,
+    'the shout bubble is up while working',
+    String(firstBubble)
+  )
+  await page.waitForTimeout(900)
+  const secondBubble = await bubbleText()
+  check(secondBubble !== firstBubble && secondBubble !== 'none', 'the bubble cycles while working', `${firstBubble} → ${secondBubble}`)
+
   await page.waitForTimeout(1200)
   const echoed = await page.evaluate((text) => document.body.innerText.includes(text), draft)
   check(echoed, 'the message reached the transcript unmasked', echoed ? 'found' : 'not found')

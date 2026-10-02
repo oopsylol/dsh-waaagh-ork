@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.20.0 (2026-09-30)
+
+The shout bubble was something you had to click for. Now it is up for the whole turn.
+
+- **Working shows the bubble, cycling through the same Ork lines as the placeholder** —
+  one 700ms tick drives both, so no extra timer appears and the two never disagree
+  (`Gork n' Mork!` up top while the composer says the same thing). When the turn lands the
+  celebration takes the bubble over for its 2.6 seconds, then the working bubble comes back
+  if another turn starts. Clicking him still works, and idle still shows no bubble.
+- The working rule is declared **before** the celebration rule on purpose, so the
+  celebration wins both the text and the animation while it is up.
+- Sway animation rather than the pop: `waaagh-shout-sway` breathes over 2.4s, which suits a
+  bubble that stays up for minutes. Covered by the `prefers-reduced-motion` switch.
+- **A stale assertion was caught by the animated rect.** The overlap check read
+  `getBoundingClientRect()` and started failing by 9-24px: the mascot's own "bark" animation
+  scales him 1.22x when your message lands, and the painted box grew with it. The check now
+  measures layout (`offsetLeft`/`offsetWidth`), which the animations cannot move — 4px
+  clearance, stable across runs. The same fix removed the flakiness from the click-bark case.
+- Smoke: 32 → **34** checks (the bubble is up while working, and its text changes).
+
 ## 0.19.2 (2026-09-30)
 
 "He gets shrunk and covered" — one cause behind both.

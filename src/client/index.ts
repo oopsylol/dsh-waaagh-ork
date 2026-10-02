@@ -301,13 +301,22 @@ const CSS = [
   '@keyframes waaagh-work-frames{0%{background-position:0 0}10%{background-position:0 14.28%}20%{background-position:0 28.57%}29%{background-position:0 42.85%}45%{background-position:0 57.14%}54%{background-position:0 71.42%}72%{background-position:0 85.71%}86%{background-position:0 100%}100%{background-position:0 0}}',
   '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /*
-   * The turn finishing is worth a WAAAGH: the bellow lands in a starburst for a couple
-   * of seconds. It hangs ABOVE the mascot, growing rightwards, rather than beside his
-   * head: to his left there is only the page margin, which on a narrow window is
-   * narrower than the bellow, so the column's `overflow:hidden` (or the sidebar) clipped
-   * its left half — the owner saw "gh!!" and nothing else. The two offsets come from
-   * `fitMascot`, which measures where the column starts and where the card's top edge
-   * is; the fallbacks only matter before the first measurement.
+   * Working: the shout bubble is up for the whole turn, cycling through the same Ork words
+   * as the placeholder (one 700ms tick drives both). It hangs ABOVE the mascot, growing
+   * rightwards, rather than beside his head: to his left there is only the page margin,
+   * which on a narrow window is narrower than the bubble, so the column's `overflow:hidden`
+   * (or the sidebar) clipped its left half — the owner saw "gh!!" and nothing else. The two
+   * offsets come from `fitMascot`, which measures where the column starts and where the
+   * card's top edge is; the fallbacks only matter before the first measurement.
+   *
+   * Declared BEFORE the celebration rule below on purpose: when a turn lands, the
+   * celebration overrides both the text and the animation for its 2.6 seconds.
+   */
+  `html[data-waaagh-running=on] .waaagh-orc::after{content:var(--waaagh-shout,"WAAAGH!");position:absolute;left:var(--waaagh-bellow-left,0);bottom:calc(100% + var(--waaagh-bellow-lift,6px));padding:15px 12px;font:900 13px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.05em;color:#0f1a06;background:${GREEN};clip-path:${starburst(10, 62)};filter:drop-shadow(2px 2px 0 #24380f);transform-origin:bottom left;white-space:nowrap;animation:waaagh-shout-sway 2.4s ease-in-out infinite}`,
+  '@keyframes waaagh-shout-sway{0%,100%{transform:rotate(-5deg) scale(.96)}50%{transform:rotate(-2deg) scale(1)}}',
+  /*
+   * The turn finishing is worth a WAAAGH: the bellow takes over the bubble for a couple of
+   * seconds, bigger and popping.
    */
   `html[data-waaagh-cheer=on] .waaagh-orc::after{content:var(--waaagh-bellow,"WAAAGH!");position:absolute;left:var(--waaagh-bellow-left,0);bottom:calc(100% + var(--waaagh-bellow-lift,6px));padding:15px 12px;font:900 13px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.05em;color:#0f1a06;background:${GREEN};clip-path:${starburst(10, 62)};filter:drop-shadow(2px 2px 0 #24380f);transform-origin:bottom left;white-space:nowrap;animation:waaagh-burst-pop 1.1s ease-in-out infinite}`,
   '@keyframes waaagh-burst-pop{0%,100%{transform:rotate(-5deg) scale(.94)}45%{transform:rotate(-8deg) scale(1.06)}}',
@@ -402,7 +411,7 @@ const CSS = [
   '@keyframes waaagh-pop{0%{transform:scale(.84) rotate(-2deg);opacity:0}70%{transform:scale(1.07) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}',
   '@keyframes waaagh-dakka{0%{transform:scale(.55) rotate(-16deg);filter:brightness(2.4)}55%{transform:scale(1.2) rotate(9deg)}100%{transform:scale(1) rotate(0);filter:none}}',
   /* one switch turns the whole menagerie off */
-  '@media (prefers-reduced-motion:reduce){.waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-act,html[data-waaagh-cheer=on] .waaagh-orc::after,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
+  '@media (prefers-reduced-motion:reduce){.waaagh-orc,html[data-waaagh-send] .waaagh-orc,html[data-waaagh-running=on] .waaagh-act,html[data-waaagh-cheer=on] .waaagh-orc::after,html[data-waaagh-running=on] .waaagh-orc::after,html[data-waaagh-running=on] [data-chat-running] [class*=runningIcon],[data-chat-flow-kind=tool-call] [class*=leading],[data-chat-flow-kind=context] [class*=leading],[data-chat-flow-kind=compaction] [data-compaction-icon],html:not([data-waaagh=revealed]) [data-chat-flow-kind=assistant-step]::before{animation:none!important}}'
 ].join('\n')
 
 const TAG_ID = 'dsh-waaagh-ork/styles'
@@ -779,24 +788,26 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     return () => stopCheer()
   }, [running])
 
-  // While running: flag the document, swap the composer placeholder for a
-  // cycling Ork word (through a CSS variable, so React's own placeholder render
-  // is never fought) and turn the running label into "Waaaaaaagh!!!".
-  // This effect re-runs on every placeholder tick, so the burst text is NOT drawn
-  // here: doing that reshuffled the bellow every 700ms and it flickered.
+  // While running: flag the document, swap the composer placeholder for a cycling Ork
+  // word, hang the same word in the shout bubble over his head, and turn the running label
+  // into "Waaaaaaagh!!!". All three ride the one 700ms tick — no extra timers, and the
+  // bubble and the placeholder always say the same thing.
   React.useEffect(() => {
     if (typeof document === 'undefined') return
     const root = document.documentElement
     runningNow = running
     if (running) {
+      const word = ORK_WORDS[wordIndex] ?? 'WAAAGH'
       root.setAttribute('data-waaagh-running', 'on')
-      root.style.setProperty('--waaagh-placeholder', JSON.stringify(ORK_WORDS[wordIndex] ?? 'WAAAGH'))
+      root.style.setProperty('--waaagh-placeholder', JSON.stringify(word))
+      root.style.setProperty('--waaagh-shout', JSON.stringify(word))
       // Belt and braces on top of the title observer above.
       markTitle(true)
       markRunningLabel()
     } else {
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
+      root.style.removeProperty('--waaagh-shout')
       watchTitle(false)
       clearRunningLabel()
     }
@@ -804,6 +815,7 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
       runningNow = false
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
+      root.style.removeProperty('--waaagh-shout')
       clearRunningLabel()
     }
   }, [running, wordIndex])
