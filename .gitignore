@@ -7,3 +7,5 @@ node_modules/
 _verify_*.png
 __pycache__/
 *.pyc
+# local debug shots from verification rounds (repo-root PNGs prefixed with _)
+/_*.png
