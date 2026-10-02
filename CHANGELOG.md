@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.19.1 (2026-09-30)
+
+The shout bubble was being cut off — the owner saw "gh!!" and nothing else.
+
+- **It hangs above him now instead of beside his head.** To his left there is only the
+  page margin, and on a narrow window the bellow (~92px of text) is wider than the margin
+  is: it started outside the chat column and the column's `overflow:hidden` clipped its
+  left half. Above him is the transcript, which has room at any width.
+- **Both of its offsets are measured, not fixed.** `fitMascot` already knows where the
+  column starts and where the card's top edge is, so it publishes
+  `--waaagh-bellow-left` (push the bubble right until it starts inside the column — on a
+  narrow window the mascot himself stands at that edge) and `--waaagh-bellow-lift` (he is
+  vertically centred on the card, so his top edge is *below* the card's top and the bubble
+  has to clear it or it covers the bubble's corner).
+- **The smoke test now guards the geometry**, at 1440 / 1000 / 880px: the bellow starts
+  inside the column and its bottom edge is above the card's top. That is the regression
+  net for a bug that only appears once the window is narrow — which is exactly how it
+  reached the owner, since every check until now ran at 1440.
+- Verified by screenshot at all three widths before and after.
+
 ## 0.19.0 (2026-09-30)
 
 The first bundle of extensions, built on hooks verified in the installed 0.2.0 bundles

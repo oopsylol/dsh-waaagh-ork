@@ -133,6 +133,50 @@ try {
   check(clicked.cheer === 'on', 'clicking the Ork makes him shout', clicked.cheer)
   check(clicked.draft === '', 'clicking him does not type into the draft', JSON.stringify(clicked.draft))
 
+  // The bellow has to be readable at any window size. It hangs above the mascot, and the
+  // two offsets that keep it there are measured by `fitMascot`: on a narrow window the
+  // mascot stands at the column's left edge, so a bubble anchored to his left edge would
+  // be clipped by the column's `overflow:hidden` (the owner saw "gh!!" and nothing else).
+  const bellowAt = async (width, height) => {
+    await page.setViewportSize({ width, height })
+    await page.waitForTimeout(400)
+    return page.evaluate(() => {
+      const orc = document.querySelector('.waaagh-orc')
+      const card = document.querySelector('[data-composer-card]')
+      const o = orc.getBoundingClientRect()
+      const c = card.getBoundingClientRect()
+      // The nearest clipping ancestor is the chat column.
+      let column = null
+      for (let el = orc.parentElement; el !== null && el !== document.body; el = el.parentElement) {
+        if (getComputedStyle(el).overflow !== 'visible') { column = el.getBoundingClientRect(); break }
+      }
+      const left = parseFloat(getComputedStyle(orc).getPropertyValue('--waaagh-bellow-left')) || 0
+      const lift = parseFloat(getComputedStyle(orc).getPropertyValue('--waaagh-bellow-lift')) || 0
+      return {
+        startsAt: Math.round(o.left + left),
+        columnLeft: column === null ? null : Math.round(column.left),
+        bellowBottom: Math.round(o.top - lift),
+        cardTop: Math.round(c.top),
+        clearsCardHorizontally: Math.round(c.left - o.left) > 0
+      }
+    })
+  }
+  for (const [width, height] of [[1440, 900], [1000, 760], [880, 700]]) {
+    const bellow = await bellowAt(width, height)
+    check(
+      bellow.columnLeft !== null && bellow.startsAt >= bellow.columnLeft,
+      `the bellow starts inside the column at ${width}px`,
+      `bellow ${bellow.startsAt} vs column ${bellow.columnLeft}`
+    )
+    check(
+      bellow.bellowBottom <= bellow.cardTop,
+      `the bellow clears the card at ${width}px`,
+      `bottom ${bellow.bellowBottom} vs card top ${bellow.cardTop}`
+    )
+  }
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.waitForTimeout(300)
+
   // A failure makes him panic: the plugin watches `data-error`, both as a new node and
   // as the attribute appearing on an existing one.
   await page.evaluate(() => {
