@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.19.0 (2026-09-30)
+
+The first bundle of extensions, built on hooks verified in the installed 0.2.0 bundles
+rather than on guesses: `data-error`, `data-chat-running`, and the fact that DSH owns
+`document.title`.
+
+- **He panics when something fails.** A failed tool call or a blown-up turn switches him
+  to a new four-frame pose — hands on his head, eyes wide, sweat flying — and turns the
+  bubble's border red for four seconds. The hook is `data-error`, watched both as a new
+  node and as the attribute appearing on one that is already there (`attributeFilter`
+  keeps that from becoming a callback per streamed token). It is **edge-triggered**: error
+  rows stay in the transcript forever, so "is there an error on screen" would leave him
+  screaming at you for the rest of the session.
+- **Clan colours** in the settings: Goffs (green), Bad Moons, Evil Sunz, Deathskulls,
+  Snakebites, Blood Axes. The line art is greyscale apart from one flat wash, so a single
+  `hue-rotate` recolours the skin and leaves every ink line black. The angles are
+  *measured*, not eyeballed — two eyeballed attempts produced an orange "yellow" and a
+  pink "red", so the shipped strips' skin hue (0.299) was read out of the PNG and each
+  clan is `(target - 0.299)`. A custom avatar is excluded: that is somebody's own picture.
+- **The window title carries the badge** while a turn runs (`WAAAGH! · …`), and **flashes
+  three times if the turn lands while the window is in the background**, so a minimised
+  app still tells you it finished. It only ever adds and strips its own prefix rather
+  than restoring a snapshot — and it re-applies on every 700ms tick, because DSH rewrites
+  the title as the session name streams and silently removed a prefix set only once.
+- **Clicking him shouts** — an easter egg, not a control: he stays `aria-hidden`, out of
+  the tab order, and clicking writes nothing to the draft.
+- `scripts/smoke.mjs` grew from 11 checks to **19**, covering all four behaviours: the
+  title badge, the click (including "the draft is still empty"), the panic strip and red
+  bubble from an injected `data-error`, and the clan surviving a reload with the hue
+  actually applied.
+- Three things the tooling caught that reasoning had not: the asset contract flagged the
+  new strip immediately, the smoke test caught the title prefix being overwritten by DSH
+  mid-turn, and the first clan screenshot showed a cyan "Bad Moons" — which is why the
+  hues are measured now.
+
 ## 0.18.3 (2026-09-30)
 
 - **The GitHub Actions are on current majors** (`checkout@v7`, `setup-node@v7`,

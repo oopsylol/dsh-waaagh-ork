@@ -15,11 +15,12 @@ import { join } from 'node:path'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const assets = join(root, 'src', 'assets')
-/** file → [width, height]. Two states: sitting (3 frames), typing (8). */
+/** file → [width, height]. Three states: sitting (3 frames), typing (8), panicking (4). */
 const EXPECTED = [
   ['ork-open.png', 144, 144],
   ['ork-idle.png', 128, 160 * 3],
-  ['ork-work.png', 128, 160 * 8]
+  ['ork-work.png', 128, 160 * 8],
+  ['ork-error.png', 128, 160 * 4]
 ]
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 

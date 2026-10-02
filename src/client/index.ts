@@ -55,6 +55,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-general/client'
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
+import orkError from '../assets/ork-error.png'
 import orkIdle from '../assets/ork-idle.png'
 import orkOpen from '../assets/ork-open.png'
 import orkWork from '../assets/ork-work.png'
@@ -108,6 +109,83 @@ function subscribeCustom(listener: (value: string | null) => void): () => void {
   }
 }
 
+// ── clan colour (localStorage + pub/sub) ──────────────────────────────────────
+/**
+ * Clans recolour the mascot with a single `hue-rotate` over the line art (see
+ * `--waaagh-clan-filter`). `goffs` is the drawn-in green and means "no filter".
+ */
+const CLANS = [
+  { id: 'goffs', label: 'Goffs（绿·默认）' },
+  { id: 'moons', label: 'Bad Moons（黄）' },
+  { id: 'sunz', label: 'Evil Sunz（红）' },
+  { id: 'skulls', label: 'Deathskulls（蓝）' },
+  { id: 'snakebites', label: 'Snakebites（褐）' },
+  { id: 'bloodaxes', label: 'Blood Axes（橄榄）' }
+] as const
+type ClanId = (typeof CLANS)[number]['id']
+const CLAN_KEY = 'dsh-waaagh-ork:clan'
+let clan: ClanId = 'goffs'
+try {
+  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(CLAN_KEY) : null
+  if (stored !== null && CLANS.some((entry) => entry.id === stored)) clan = stored as ClanId
+} catch {
+  /* storage unavailable: the default clan applies */
+}
+const clanListeners = new Set<(value: ClanId) => void>()
+function setClan(value: ClanId): void {
+  clan = value
+  try {
+    localStorage.setItem(CLAN_KEY, value)
+  } catch {
+    /* storage unavailable (private mode): the in-memory value still applies */
+  }
+  for (const listener of clanListeners) listener(clan)
+}
+function subscribeClan(listener: (value: ClanId) => void): () => void {
+  clanListeners.add(listener)
+  listener(clan)
+  return () => {
+    clanListeners.delete(listener)
+  }
+}
+
+// ── window title badge ────────────────────────────────────────────────────────
+/**
+ * Prefix the tab/taskbar title while a turn runs. DSH owns `document.title`, so this
+ * only ever adds and strips a prefix of its own rather than restoring a snapshot —
+ * otherwise a session rename mid-turn would be clobbered on the way out.
+ */
+const TITLE_PREFIX = 'WAAAGH! · '
+function markTitle(running: boolean): void {
+  if (typeof document === 'undefined') return
+  const current = document.title
+  if (running) {
+    if (!current.startsWith(TITLE_PREFIX)) document.title = TITLE_PREFIX + current
+  } else if (current.startsWith(TITLE_PREFIX)) {
+    document.title = current.slice(TITLE_PREFIX.length)
+  }
+}
+let titleFlash: ReturnType<typeof setInterval> | undefined
+/** A turn landed while the window was in the background: wave from the taskbar. */
+function flashTitle(): void {
+  if (typeof document === 'undefined' || !document.hidden) return
+  const base = document.title
+  let ticks = 0
+  clearInterval(titleFlash)
+  titleFlash = setInterval(() => {
+    ticks += 1
+    document.title = ticks % 2 === 1 ? 'WAAAGH!!!' : base
+    if (ticks >= 6) {
+      clearInterval(titleFlash)
+      document.title = base
+    }
+  }, 650)
+}
+function stopTitleFlash(): void {
+  clearInterval(titleFlash)
+  titleFlash = undefined
+}
+
 // ── geometry ──────────────────────────────────────────────────────────────
 /**
  * Mascot box. Every strip frame is 128x160, so the box has to keep that 0.8
@@ -148,23 +226,41 @@ const CSS = [
    * `transform` outright.
    */
   'html[data-waaagh-orc] [data-composer-card]{padding-left:18px!important}',
-  `.waaagh-orc{position:absolute;z-index:40;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:default;padding:0;pointer-events:none;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  `.waaagh-orc{position:absolute;z-index:40;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:pointer;padding:0;pointer-events:auto;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
   /*
-   * Two animations, two strips. Waiting: sitting on the ground, three frames walked
+   * Three animations, three strips. Waiting: sitting on the ground, three frames walked
    * as an eyelid roll. Working: at the keyboard, hammering away, sweating, yelling
-   * WAAAGH — six frames. Everything else (the swim, the drown, three shout sets, the
-   * standing idle, the pose rotation) is gone: one state, one drawing.
+   * WAAAGH — eight frames. Failing: panicking with his hands on his head — four frames,
+   * which overrides whichever of the other two is current, because a failed tool call is
+   * the one thing that should interrupt him.
    */
   `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 300%;background-image:var(--waaagh-face,url("${orkIdle}"));animation:waaagh-blink 5s step-end infinite}`,
   'html[data-waaagh-running=on] .waaagh-act{background-image:var(--waaagh-face,url("' + orkWork + '"));background-size:100% 800%;animation:waaagh-work-frames 1.2s step-end infinite}',
+  `html[data-waaagh-error=on] .waaagh-act{background-image:var(--waaagh-face,url("${orkError}"));background-size:100% 400%;animation:waaagh-error-frames .42s step-end infinite}`,
   /* A custom avatar is one still image: no strip, so no walk. */
   '.waaagh-custom .waaagh-act{background-image:var(--waaagh-face)!important;background-size:contain!important;background-position:center!important;animation:none!important}',
+  /*
+   * Clan colours. Angles are measured, not guessed: the shipped strips' skin sits at hue
+   * 0.299, so each clan is (target - 0.299) computed in Python rather than eyeballed.
+   * The line art is greyscale except for one flat green wash, so a single
+   * `hue-rotate` recolours the skin and leaves every ink line black — a whole clan for
+   * one property. Kept off a custom avatar (that is somebody's own picture, not ours).
+   */
+  `.waaagh-orc{filter:var(--waaagh-clan-filter,saturate(1) brightness(1))}`,
+  'html[data-waaagh-clan=moons] .waaagh-orc:not(.waaagh-custom){--waaagh-clan-filter:hue-rotate(-64deg) saturate(1.5) brightness(1.06)}',
+  'html[data-waaagh-clan=sunz] .waaagh-orc:not(.waaagh-custom){--waaagh-clan-filter:hue-rotate(-111deg) saturate(1.55)}',
+  'html[data-waaagh-clan=skulls] .waaagh-orc:not(.waaagh-custom){--waaagh-clan-filter:hue-rotate(101deg) saturate(1.35)}',
+  'html[data-waaagh-clan=snakebites] .waaagh-orc:not(.waaagh-custom){--waaagh-clan-filter:hue-rotate(-82deg) saturate(.8) brightness(.95)}',
+  'html[data-waaagh-clan=bloodaxes] .waaagh-orc:not(.waaagh-custom){--waaagh-clan-filter:hue-rotate(-36deg) saturate(1.05)}',
+  /* The bubble goes red while something is failing, and back when it stops. */
+  'html[data-waaagh-error=on] [data-composer-card]{border-color:#a83214!important;box-shadow:4px 4px 0 rgba(110,26,10,.3),0 0 0 1px rgba(210,70,40,.45)!important}',
   /* It leans in (and flushes greener) as soon as the composer holds something:
      the owner renders `[data-composer-placeholder]` only while the draft is
      empty, which is the one draft signal available without touching the editor. */
-  '[data-composer-card]:not(:has([data-composer-placeholder])) .waaagh-orc{filter:saturate(1.18) brightness(1.06)}',
+  '[data-composer-card]:not(:has([data-composer-placeholder])) .waaagh-orc{filter:var(--waaagh-clan-filter,saturate(1) brightness(1)) saturate(1.18) brightness(1.06)}',
   /* It barks once when a message of yours lands in the transcript. */
   'html[data-waaagh-send] .waaagh-orc{animation:waaagh-bark .8s cubic-bezier(.2,1.5,.4,1) 1}',
+  '@keyframes waaagh-error-frames{0%{background-position:0 0}25%{background-position:0 33.33%}50%{background-position:0 66.66%}75%{background-position:0 100%}100%{background-position:0 0}}',
   /*
    * Eight work frames on an uneven rhythm, not a metronome: the six hammering beats are
    * short (9-10% of the loop) and the four that read as effort — the yell, the wipe
@@ -409,6 +505,37 @@ let burstWord = randomBellow(2, 6)
 let hasRun = false
 /** How long the bellow hangs in its starburst after a turn lands. */
 const CHEER_MS = 2600
+/** How long he panics after a failure. */
+const ERROR_MS = 4200
+/** Everyone mounted on this page who should react to a failure. */
+const errorListeners = new Set<() => void>()
+/** Report a failure that just appeared in the transcript. */
+function noteError(): void {
+  for (const listener of errorListeners) listener()
+}
+let cheerTimer: ReturnType<typeof setTimeout> | undefined
+/**
+ * Show a bellow in the starburst beside him. Used by both the "turn landed"
+ * celebration and clicking on him, so the two cannot fight over the same attribute.
+ */
+function cheer(word: string): void {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  root.dataset.waaaghCheer = 'on'
+  root.style.setProperty('--waaagh-bellow', JSON.stringify(word))
+  clearTimeout(cheerTimer)
+  cheerTimer = setTimeout(() => {
+    delete root.dataset.waaaghCheer
+    root.style.removeProperty('--waaagh-bellow')
+  }, CHEER_MS)
+}
+function stopCheer(): void {
+  if (typeof document === 'undefined') return
+  clearTimeout(cheerTimer)
+  const root = document.documentElement
+  delete root.dataset.waaaghCheer
+  root.style.removeProperty('--waaagh-bellow')
+}
 /**
  * Mask the running label with the current run's bellow.
  */
@@ -516,6 +643,41 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     return () => clearInterval(id)
   }, [running])
 
+  // Clan (mascot colour scheme) → the `<html>` attribute the stylesheet keys on.
+  const [clanValue, setClanValue] = React.useState<ClanId>(clan)
+  React.useEffect(() => subscribeClan(setClanValue), [])
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (clanValue === 'goffs') delete root.dataset.waaaghClan
+    else root.dataset.waaaghClan = clanValue
+    return () => {
+      delete root.dataset.waaaghClan
+    }
+  }, [clanValue])
+
+  // Failing: a tool call or the turn itself blew up. He panics for a few seconds — the
+  // error rows stay in the transcript forever, so this has to be edge-triggered on a
+  // *new* error rather than "is there an error on screen".
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const raise = (): void => {
+      root.dataset.waaaghError = 'on'
+      clearTimeout(timer)
+      timer = setTimeout(() => delete root.dataset.waaaghError, ERROR_MS)
+    }
+    errorListeners.add(raise)
+    // Errors already on screen at mount (a reload mid-turn) count too.
+    if (document.querySelector('[data-error]') !== null) raise()
+    return () => {
+      errorListeners.delete(raise)
+      clearTimeout(timer)
+      delete root.dataset.waaaghError
+    }
+  }, [])
+
   // A turn starts: draw this run's bellow, then flip the mascot to the keyboard.
   // There is no progress state machine any more — the two animations are "sitting"
   // and "typing", and `data-waaagh-running` is the whole switch between them.
@@ -524,11 +686,16 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     runningWord = randomBellow()
     burstWord = randomBellow(2, 6)
     hasRun = true
+    stopTitleFlash()
+    markTitle(true)
     markRunningLabel()
     // The composer switches layout for a turn (hero card → session card), so the
     // mascot's width and offset are re-measured once the new layout has painted.
     const frame = requestAnimationFrame(() => fitMascot(orcRef.current))
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(frame)
+      markTitle(false)
+    }
   }, [running])
 
   // The turn landing is worth a WAAAGH: the bellow hangs in a starburst beside him
@@ -539,18 +706,10 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     // Consume the flag: without this, re-mounting the composer while idle (a session
     // switch) fires the celebration again even though no turn just ended.
     hasRun = false
-    const root = document.documentElement
-    root.dataset.waaaghCheer = 'on'
-    root.style.setProperty('--waaagh-bellow', JSON.stringify(burstWord))
-    const id = setTimeout(() => {
-      delete root.dataset.waaaghCheer
-      root.style.removeProperty('--waaagh-bellow')
-    }, CHEER_MS)
-    return () => {
-      clearTimeout(id)
-      delete root.dataset.waaaghCheer
-      root.style.removeProperty('--waaagh-bellow')
-    }
+    cheer(burstWord)
+    // Landed while the window was in the background: keep waving from the taskbar.
+    flashTitle()
+    return () => stopCheer()
   }, [running])
 
   // While running: flag the document, swap the composer placeholder for a
@@ -565,10 +724,14 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     if (running) {
       root.setAttribute('data-waaagh-running', 'on')
       root.style.setProperty('--waaagh-placeholder', JSON.stringify(ORK_WORDS[wordIndex] ?? 'WAAAGH'))
+      // Re-applied on every tick, not just at run start: DSH rewrites the title as the
+      // session name streams in, which silently removes a prefix set only once.
+      markTitle(true)
       markRunningLabel()
     } else {
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
+      markTitle(false)
       clearRunningLabel()
     }
     return () => {
@@ -585,10 +748,12 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     {
       ref: orcRef,
       className: isCustom ? 'waaagh-orc waaagh-custom' : 'waaagh-orc',
-      // The custom avatar feeds the idle head layer's variable. Decorative only, so
-      // no title (it is aria-hidden and pointer-events:none).
+      // The custom avatar feeds the idle head layer's variable. Decorative: he is
+      // aria-hidden and out of the tab order, and clicking him is an easter egg
+      // (an extra bellow) rather than a control, so no role or title is claimed.
       style: isCustom ? ({ '--waaagh-face': `url("${sprite}")` } as React.CSSProperties) : undefined,
-      'aria-hidden': true
+      'aria-hidden': true,
+      onClick: () => cheer(randomBellow(2, 6))
     },
     // The one strip. Which drawing it shows is the stylesheet's call: sitting by
     // default, at the keyboard once `data-waaagh-running` is set.
@@ -611,9 +776,11 @@ function WaaaghToggle(): React.ReactElement {
   )
 }
 
-// ── AvatarSettings (settings.general.item): custom image ─────────────────────
+// ── AvatarSettings (settings.general.item): avatar + clan ────────────────────
 function AvatarSettings(): React.ReactElement {
   const [value, setValue] = React.useState(customImage ?? '')
+  const [clanValue, setClanValue] = React.useState<ClanId>(clan)
+  React.useEffect(() => subscribeClan(setClanValue), [])
   const apply = (): void => {
     const next = value.trim()
     if (next === '' || /^(https?:|data:image\/)/.test(next)) setCustomImage(next === '' ? null : next)
@@ -645,6 +812,28 @@ function AvatarSettings(): React.ReactElement {
       }),
       React.createElement('button', { type: 'button', onClick: apply }, '应用'),
       React.createElement('button', { type: 'button', onClick: reset }, '恢复默认')
+    ),
+    React.createElement(
+      'div',
+      { className: 'waaagh-settings-row' },
+      React.createElement('label', { htmlFor: 'waaagh-clan' }, '氏族配色：'),
+      React.createElement(
+        'select',
+        {
+          id: 'waaagh-clan',
+          className: 'waaagh-settings-input',
+          value: clanValue,
+          onChange: (event: ChangeEvent<HTMLSelectElement>) => setClan(event.target.value as ClanId)
+        },
+        ...CLANS.map((entry) =>
+          React.createElement('option', { key: entry.id, value: entry.id }, entry.label)
+        )
+      )
+    ),
+    React.createElement(
+      'div',
+      { className: 'waaagh-settings-hint' },
+      '氏族只给兽人换肤色（线条画的墨线是灰度的，所以一次色相旋转就够），不会动遮罩文字和气泡之外的东西。'
     )
   )
 }
@@ -759,8 +948,18 @@ export function apply(ctx: Context): void {
     for (const el of document.querySelectorAll(FLOW_ROWS)) orkify(el)
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
+        // A failure can arrive either as a new node or as `data-error` appearing on a
+        // node that is already there, so both mutation kinds are watched. The attribute
+        // filter keeps this from turning into a callback per streamed token.
+        if (mutation.type === 'attributes') {
+          noteError()
+          continue
+        }
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === 1) scan(node as Element)
+          if (node.nodeType !== 1) continue
+          const element = node as Element
+          if (element.matches('[data-error]') || element.querySelector('[data-error]') !== null) noteError()
+          scan(element)
         }
       }
       // The running label is re-rendered as the turn streams; re-locate it.
@@ -768,8 +967,14 @@ export function apply(ctx: Context): void {
     })
     // `characterData` is deliberately NOT observed: every streamed token used to
     // fire this callback (and the layout reads behind it) for nothing. Added nodes
-    // are what matter, and only childList reports those.
-    observer.observe(document.body, { childList: true, subtree: true })
+    // are what matter, and only childList reports those; the one attribute worth
+    // watching is the error flag.
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-error']
+    })
     markRunningLabel()
     return () => {
       clearTimeout(barkTimer)

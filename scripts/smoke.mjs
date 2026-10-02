@@ -119,6 +119,59 @@ try {
   const echoed = await page.evaluate((text) => document.body.innerText.includes(text), draft)
   check(echoed, 'the message reached the transcript unmasked', echoed ? 'found' : 'not found')
 
+  // The taskbar badge: DSH owns the title, we only add and strip a prefix of our own.
+  const titleWhileRunning = await page.evaluate(() => document.title)
+  check(titleWhileRunning.startsWith('WAAAGH! · '), 'the title carries the badge while working', titleWhileRunning)
+
+  // Clicking him is an easter egg: the bellow appears without touching the composer.
+  await page.click('.waaagh-orc', { force: true })
+  await page.waitForTimeout(120)
+  const clicked = await page.evaluate(() => ({
+    cheer: document.documentElement.dataset.waaaghCheer ?? '-',
+    draft: document.querySelector('[data-composer-card] [contenteditable="true"]')?.textContent ?? null
+  }))
+  check(clicked.cheer === 'on', 'clicking the Ork makes him shout', clicked.cheer)
+  check(clicked.draft === '', 'clicking him does not type into the draft', JSON.stringify(clicked.draft))
+
+  // A failure makes him panic: the plugin watches `data-error`, both as a new node and
+  // as the attribute appearing on an existing one.
+  await page.evaluate(() => {
+    const row = document.createElement('div')
+    row.setAttribute('data-chat-flow-kind', 'tool-call')
+    row.textContent = 'smoke failure probe'
+    document.body.appendChild(row)
+    const inner = document.createElement('div')
+    row.appendChild(inner)
+    inner.setAttribute('data-error', '')
+  })
+  await page.waitForTimeout(300)
+  const panicking = await page.evaluate(() => {
+    const act = getComputedStyle(document.querySelector('.waaagh-act'))
+    const card = getComputedStyle(document.querySelector('[data-composer-card]'))
+    return {
+      flag: document.documentElement.dataset.waaaghError ?? '-',
+      strip: act.animationName,
+      border: card.borderTopColor
+    }
+  })
+  check(panicking.flag === 'on', 'a failure raises the panic flag', panicking.flag)
+  check(panicking.strip === 'waaagh-error-frames', 'a failure switches him to the panic strip', panicking.strip)
+  check(/rgb\(168, 50, 20\)/.test(panicking.border), 'the bubble goes red while failing', panicking.border)
+  await page.evaluate(() => document.querySelectorAll('[data-error]').forEach((el) => el.removeAttribute('data-error')))
+
+  // Clan colours: read from storage on boot, applied as a hue rotation on the mascot.
+  await page.evaluate(() => localStorage.setItem('dsh-waaagh-ork:clan', 'sunz'))
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('[data-composer-card] .waaagh-orc', { timeout: 60000 })
+  await page.waitForTimeout(1200)
+  const clan = await page.evaluate(() => ({
+    attribute: document.documentElement.dataset.waaaghClan ?? '-',
+    filter: getComputedStyle(document.querySelector('.waaagh-orc')).filter
+  }))
+  check(clan.attribute === 'sunz', 'the clan survives a reload', clan.attribute)
+  check(clan.filter.includes('hue-rotate(-111deg)'), 'the clan recolours the mascot', clan.filter)
+  await page.evaluate(() => localStorage.removeItem('dsh-waaagh-ork:clan'))
+
   check(errors.length === 0, 'no console errors', errors.slice(0, 2).join(' | ') || 'none')
 } finally {
   await browser.close()

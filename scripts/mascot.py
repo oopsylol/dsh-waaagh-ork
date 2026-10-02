@@ -110,6 +110,16 @@ PROMPTS = {
     "样子，把头上的汗珠全部去掉。",
     "work8": WORK + "姿势和参考图完全一样，但嘴巴闭紧咬着牙（两颗獠牙露在嘴唇外面）、眼睛瞪大盯着屏幕，"
     "额头和脑袋旁边冒出几滴汗珠。",
+    # The panic pose: a tool call failed or the turn blew up. Four frames of shaking
+    # so it reads as alarm rather than a held pose.
+    "error1": LINE + CHARACTER + "现在他**惊慌失措**：两只小短手举起来抱着脑袋，眼睛瞪到最大、瞳孔缩得很小，"
+    "嘴巴张得很大在惨叫，眉头拧成一团，脑袋旁边飞出好几滴汗珠（汗珠也用线条画），身体向后仰。",
+    "error2": LINE + CHARACTER + "现在他**惊慌失措**：两只小短手在脑袋两侧乱挥，眼睛瞪到最大，"
+    "嘴巴张着惨叫，整个身体向左边抖，汗珠四处飞（汗珠也用线条画）。",
+    "error3": LINE + CHARACTER + "现在他**惊慌失措**：两只手捂着脸只露出瞪大的眼睛，嘴巴张着惨叫，"
+    "整个身体向右边抖，汗珠往下滴（汗珠也用线条画）。",
+    "error4": LINE + CHARACTER + "现在他**惊慌失措**：一只手抓着脑袋一只手举起来，眼睛瞪到最大、眉毛挑得老高，"
+    "嘴巴张成方的在惨叫，汗珠从两边飞出去（汗珠也用线条画）。",
     # The 16px icon. Drawn on purpose rather than cropped out of a strip: at 16px a
     # full-body frame's head is a green blob, so this asks for a close-up with a hard
     # face — big eyes, heavy brow, tusks — which is what survives at that size.
@@ -133,6 +143,10 @@ REFERENCES = {
     "work7": "work1",
     "work8": "work1",
     "icon1": "idle1",
+    "error1": "idle1",
+    "error2": "error1",
+    "error3": "error1",
+    "error4": "error1",
 }
 # Two states, two strips: sitting while nothing is asked of him, typing while the
 # model works. The idle strip is three frames (open, half shut, shut) so the blink is
@@ -140,6 +154,7 @@ REFERENCES = {
 STRIPS = {
     "ork-idle.png": ["idle1", "idle2", "idle3"],
     "ork-work.png": ["work1", "work2", "work3", "work4", "work5", "work6", "work7", "work8"],
+    "ork-error.png": ["error1", "error2", "error3", "error4"],
 }
 # The icon: one purpose-drawn head frame, fitted to 144x144 by `build_icon`.
 ICON_FRAME = "icon1"
