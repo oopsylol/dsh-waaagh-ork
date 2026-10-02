@@ -110,18 +110,22 @@ try {
   })
   check(sent !== null && sent.includes(draft), 'the draft is left exactly as typed', sent ?? 'no editor')
   await page.keyboard.press('Enter')
-  await page.waitForTimeout(1800)
+  // Early, while the turn is certainly still running: the title badge and the working
+  // strip are both assertions about "mid-turn", and a fast turn can end before a later
+  // probe (that is exactly how this check flaked once).
+  await page.waitForTimeout(700)
+  const titleWhileRunning = await page.evaluate(() => document.title)
+  check(titleWhileRunning.startsWith('WAAAGH! · '), 'the title carries the badge while working', titleWhileRunning)
 
   const work = await probe()
   check(work.strip === 'waaagh-work-frames', 'working shows the keyboard strip', work.strip)
   check(work.size === '100% 800%', 'working strip is 8 frames', work.size)
-  check(work.clearsCard >= 0, 'the mascot stays clear while working', `${work.clearsCard}px`)
+  // He may borrow up to 10px of the card's own left padding — that is how he stays big on a
+  // narrow window — and no more, because the "+" button sits further in than that.
+  check(work.clearsCard >= -12, 'the mascot overlaps the card by at most its padding', `${work.clearsCard}px`)
+  await page.waitForTimeout(1200)
   const echoed = await page.evaluate((text) => document.body.innerText.includes(text), draft)
   check(echoed, 'the message reached the transcript unmasked', echoed ? 'found' : 'not found')
-
-  // The taskbar badge: DSH owns the title, we only add and strip a prefix of our own.
-  const titleWhileRunning = await page.evaluate(() => document.title)
-  check(titleWhileRunning.startsWith('WAAAGH! · '), 'the title carries the badge while working', titleWhileRunning)
 
   // Clicking him is an easter egg: the bellow appears without touching the composer.
   await page.click('.waaagh-orc', { force: true })
@@ -161,6 +165,49 @@ try {
       }
     })
   }
+  // The mascot has to be whole at every window size: nothing paints over him, and he is
+  // not collapsed to the floor by a wrong measurement. Both were real bugs — the width was
+  // measured against a 16px wrapper (so he was pinned at the floor AND hung 63px left of
+  // it, under the sidebar on a narrow window).
+  const orcAt = async (width, height) => {
+    await page.setViewportSize({ width, height })
+    await page.waitForTimeout(400)
+    return page.evaluate(() => {
+      const orc = document.querySelector('.waaagh-orc')
+      const o = orc.getBoundingClientRect()
+      let column = null
+      for (let el = orc.parentElement; el !== null && el !== document.body; el = el.parentElement) {
+        if (getComputedStyle(el).overflow !== 'visible') { column = el.getBoundingClientRect(); break }
+      }
+      const x = Math.round(o.left + 3)
+      const y = Math.round(o.top + o.height / 2)
+      const stack = document.elementsFromPoint(x, y)
+      const topMost = stack[0] === undefined ? null : stack[0]
+      return {
+        left: Math.round(o.left),
+        width: Math.round(o.width),
+        wallLeft: column === null ? null : Math.round(column.left),
+        paintedOverBy: topMost === null ? 'nothing' : topMost.className.toString().slice(0, 24) || topMost.tagName,
+        oursOnTop: topMost !== undefined && topMost.closest('.waaagh-orc') !== null
+      }
+    })
+  }
+  for (const [width, height] of [[1440, 900], [1000, 760], [880, 700]]) {
+    const orc = await orcAt(width, height)
+    check(
+      orc.oursOnTop,
+      `nothing paints over the mascot at ${width}px`,
+      `topmost is ${orc.paintedOverBy} at x=${orc.left}`
+    )
+    check(
+      orc.wallLeft !== null && orc.left >= orc.wallLeft,
+      `the mascot stands inside the wall at ${width}px`,
+      `left ${orc.left} vs wall ${orc.wallLeft}`
+    )
+  }
+  const wide = await orcAt(1440, 900)
+  check(wide.width >= 110, 'he is drawn at full size when there is room', `${wide.width}px wide`)
+
   for (const [width, height] of [[1440, 900], [1000, 760], [880, 700]]) {
     const bellow = await bellowAt(width, height)
     check(

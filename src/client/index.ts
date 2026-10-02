@@ -165,6 +165,30 @@ function markTitle(running: boolean): void {
     document.title = current.slice(TITLE_PREFIX.length)
   }
 }
+/**
+ * Watch the `<title>` node while a turn runs.
+ *
+ * DSH rewrites the title as the session name streams in, which drops the prefix. Re-applying
+ * it on a timer left a window (measured: the smoke check read the title in one of those gaps
+ * and failed); watching the node means the prefix is restored within the same tick it is
+ * lost.
+ */
+let titleObserver: MutationObserver | undefined
+function watchTitle(running: boolean): void {
+  if (typeof document === 'undefined') return
+  if (!running) {
+    titleObserver?.disconnect()
+    titleObserver = undefined
+    markTitle(false)
+    return
+  }
+  markTitle(true)
+  if (titleObserver !== undefined || typeof MutationObserver === 'undefined') return
+  const node = document.querySelector('title')
+  if (node === null) return
+  titleObserver = new MutationObserver(() => markTitle(true))
+  titleObserver.observe(node, { childList: true, characterData: true, subtree: true })
+}
 let titleFlash: ReturnType<typeof setInterval> | undefined
 /** A turn landed while the window was in the background: wave from the taskbar. */
 function flashTitle(): void {
@@ -202,6 +226,13 @@ const ORK_H = Math.round((ORK_W * 160) / 128)
  */
 const FLOAT_OUT = ORK_W + 4
 /**
+ * How many pixels of the card's own left padding the mascot may stand over. The card
+ * carries 18px of it, so this never covers the "+" button — and on a narrow window it is
+ * the difference between a mascot and a thumbnail, because the wall left of the card is
+ * what it is.
+ */
+const CARD_OVERLAP = 10
+/**
  * 12-point comic starburst, used as the shout bubble's `clip-path`. A rounded
  * speech bubble says "indoor voice"; a starburst says the Ork is bellowing.
  */
@@ -226,7 +257,7 @@ const CSS = [
    * `transform` outright.
    */
   'html[data-waaagh-orc] [data-composer-card]{padding-left:18px!important}',
-  `.waaagh-orc{position:absolute;z-index:40;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:pointer;padding:0;pointer-events:auto;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
+  `.waaagh-orc{position:absolute;z-index:600;left:-${FLOAT_OUT}px;top:calc(50% - ${ORK_H / 2}px);width:${ORK_W}px;height:${ORK_H}px;background:none;border:none;cursor:pointer;padding:0;pointer-events:auto;animation:waaagh-breathe 4.2s ease-in-out infinite;transition:filter .25s ease}`,
   /*
    * Three animations, three strips. Waiting: sitting on the ground, three frames walked
    * as an eyelid roll. Working: at the keyboard, hammering away, sweating, yelling
@@ -446,19 +477,37 @@ function fitMascot(orc: HTMLElement | null): void {
   if (orc === null || typeof document === 'undefined') return
   const card = orc.closest('[data-composer-card]') ?? document.querySelector('[data-composer-card]')
   if (card === null) return
-  const column = card.parentElement
   const cardBox = card.getBoundingClientRect()
-  const columnLeft = column?.getBoundingClientRect().left ?? cardBox.left
-  // Width is limited three ways: the mascot's own art, the margin the column
-  // leaves beside the card, and the card's own height — a 147px Ork beside a 102px
-  // bubble looks wrong and leaves no room for a lap. Floor of 76px keeps him from
-  // becoming a thumbnail on a narrow window.
-  const byHeight = Math.round((cardBox.height * 1.2 * ORK_W) / ORK_H)
-  const width = Math.round(Math.max(76, Math.min(ORK_W, cardBox.left - columnLeft - 6, byHeight)))
+  /*
+   * How much room is there to the left? `card.parentElement` is NOT the answer: on the
+   * desktop it is a 16px wrapper, so the measurement collapsed to the floor and the
+   * mascot was pinned at 76px (which read as "he shrank") while still hanging 63px out
+   * to the left, where a narrower window put him under the sidebar. The meaningful box
+   * is the nearest ancestor that actually CLIPS — that one's left edge is the wall.
+   */
+  let column: Element | null = card.parentElement
+  for (let el = card.parentElement; el !== null && el !== document.body; el = el.parentElement) {
+    if (getComputedStyle(el).overflow !== 'visible') {
+      column = el
+      break
+    }
+  }
+  const columnBox = column?.getBoundingClientRect() ?? cardBox
+  /*
+   * He is as large as the room allows and always whole: the width may borrow a few pixels
+   * over the card's own left padding (the card has 18px of it, so nothing under him ends
+   * up covered), and his left edge is then clamped to the wall. Sizing him from the card
+   * alone and letting a floor win is what pinned him at that floor AND pushed him 7px past
+   * the wall on a narrow window, where the sidebar painted over him.
+   */
+  const wall = columnBox.left
+  const room = cardBox.left + CARD_OVERLAP - wall - 2
+  const width = Math.round(Math.min(ORK_W, Math.max(48, room)))
   const height = Math.round((width * ORK_H) / ORK_W)
   const parent = (orc.offsetParent as HTMLElement | null) ?? column
   const parentBox = parent?.getBoundingClientRect() ?? { left: 0, top: 0 }
-  const left = Math.round(cardBox.left - width - 4 - parentBox.left)
+  const leftViewport = Math.max(wall + 2, cardBox.left - width - 4)
+  const left = Math.round(leftViewport - parentBox.left)
   const top = Math.round(cardBox.top + cardBox.height / 2 - height / 2 - parentBox.top)
   orc.style.width = `${width}px`
   orc.style.height = `${height}px`
@@ -473,7 +522,7 @@ function fitMascot(orc: HTMLElement | null): void {
    * top; the bubble has to clear that edge or it covers the bubble's corner.
    */
   const orcBox = orc.getBoundingClientRect()
-  const bellowLeft = Math.max(0, Math.round(columnLeft - orcBox.left))
+  const bellowLeft = Math.max(0, Math.round(columnBox.left - orcBox.left))
   const bellowLift = Math.max(6, Math.round(orcBox.top - cardBox.top + 4))
   orc.style.setProperty('--waaagh-bellow-left', `${bellowLeft}px`)
   orc.style.setProperty('--waaagh-bellow-lift', `${bellowLift}px`)
@@ -705,14 +754,14 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     burstWord = randomBellow(2, 6)
     hasRun = true
     stopTitleFlash()
-    markTitle(true)
+    watchTitle(true)
     markRunningLabel()
     // The composer switches layout for a turn (hero card → session card), so the
     // mascot's width and offset are re-measured once the new layout has painted.
     const frame = requestAnimationFrame(() => fitMascot(orcRef.current))
     return () => {
       cancelAnimationFrame(frame)
-      markTitle(false)
+      watchTitle(false)
     }
   }, [running])
 
@@ -742,14 +791,13 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
     if (running) {
       root.setAttribute('data-waaagh-running', 'on')
       root.style.setProperty('--waaagh-placeholder', JSON.stringify(ORK_WORDS[wordIndex] ?? 'WAAAGH'))
-      // Re-applied on every tick, not just at run start: DSH rewrites the title as the
-      // session name streams in, which silently removes a prefix set only once.
+      // Belt and braces on top of the title observer above.
       markTitle(true)
       markRunningLabel()
     } else {
       root.removeAttribute('data-waaagh-running')
       root.style.removeProperty('--waaagh-placeholder')
-      markTitle(false)
+      watchTitle(false)
       clearRunningLabel()
     }
     return () => {

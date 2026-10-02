@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.19.2 (2026-09-30)
+
+"He gets shrunk and covered" — one cause behind both.
+
+- **The room he was measuring was not the room.** `fitMascot` took `card.parentElement` for
+  the chat column; on the desktop that is a **16px wrapper**. So the width collapsed to its
+  floor (he was pinned at 76px, which read as "he shrank") while his left edge still hung
+  **63px** out of that wrapper — and on a narrow window that put him under the sidebar,
+  which paints over him. The measurement now walks out to the nearest ancestor that actually
+  **clips**; *that* left edge is the wall.
+- **He is drawn as large as the room allows, and always whole.** The width may borrow 10px
+  over the card's own left padding (the card carries 18px of it, so the "+" button is never
+  covered) and his left edge is then clamped to the wall. Measured: 124px wide at 1440px
+  (the full art, up from 76), 62px at 880px where the wall leaves only ~53px — and at that
+  width he used to be pushed 7px past the wall.
+- **Layering**: `z-index: 40` → `600`, above the neighbouring chrome rather than level with
+  it.
+- **The title badge had a race, and the smoke test caught it.** DSH rewrites the title as the
+  session name streams, and re-applying the prefix on a 700ms timer left gaps — one of which
+  the check landed in. The title node is now observed, so the prefix is restored in the same
+  tick it is lost. Ran the suite three times to confirm it is not flaky.
+- The smoke test grew from 25 to **32** checks, and two of the new ones are the direct
+  regression nets for this bug: at 1440 / 1000 / 880px, **the topmost element at the mascot's
+  left edge is the mascot himself** (nothing paints over him) and **his left edge is inside
+  the wall** — plus "he is drawn at full size when there is room". One stale assertion had to
+  change with the policy: he may now overlap the card's padding, so "never overlaps" became
+  "overlaps by at most 12px".
+
 ## 0.19.1 (2026-09-30)
 
 The shout bubble was being cut off — the owner saw "gh!!" and nothing else.
