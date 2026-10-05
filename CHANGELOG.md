@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.20.1 (2026-09-30)
+
+"Too quick to follow, and the bubble wants to be further right."
+
+- **One cadence instead of two.** The work animation was a 1.2s loop (with 9-10% hammering
+  beats, so ~110ms a frame) and the shout bubble changed phrase every 700ms — both faster
+  than the eye wants for something that runs for minutes. They are now the same 2.4s: one
+  full pass of the eight frames per phrase, and the placeholder and the bubble still share
+  the one timer.
+- **The bubble sits 26px further right** (`BELLOW_SHIFT`), because flush against the wall it
+  read as glued to the sidebar. The wall clamp still wins on a window too narrow to allow
+  the nudge.
+- Three of the four new smoke checks pin exactly what was asked for: the work animation
+  duration is `2.4s` (that knob has been asked about twice now), and the bubble starts at
+  least 20px in from the mascot's left edge at all three widths. 34 → **38** checks.
+
 ## 0.20.0 (2026-09-30)
 
 The shout bubble was something you had to click for. Now it is up for the whole turn.

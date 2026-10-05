@@ -232,6 +232,8 @@ const FLOAT_OUT = ORK_W + 4
  * what it is.
  */
 const CARD_OVERLAP = 10
+/** How far right of the mascot's left edge the shout bubble starts. */
+const BELLOW_SHIFT = 26
 /**
  * 12-point comic starburst, used as the shout bubble's `clip-path`. A rounded
  * speech bubble says "indoor voice"; a starburst says the Ork is bellowing.
@@ -266,7 +268,7 @@ const CSS = [
    * the one thing that should interrupt him.
    */
   `.waaagh-act{position:absolute;inset:0;background-position:0 0;background-repeat:no-repeat;background-size:100% 300%;background-image:var(--waaagh-face,url("${orkIdle}"));animation:waaagh-blink 5s step-end infinite}`,
-  'html[data-waaagh-running=on] .waaagh-act{background-image:var(--waaagh-face,url("' + orkWork + '"));background-size:100% 800%;animation:waaagh-work-frames 1.2s step-end infinite}',
+  'html[data-waaagh-running=on] .waaagh-act{background-image:var(--waaagh-face,url("' + orkWork + '"));background-size:100% 800%;animation:waaagh-work-frames 2.4s step-end infinite}',
   `html[data-waaagh-error=on] .waaagh-act{background-image:var(--waaagh-face,url("${orkError}"));background-size:100% 400%;animation:waaagh-error-frames .42s step-end infinite}`,
   /* A custom avatar is one still image: no strip, so no walk. */
   '.waaagh-custom .waaagh-act{background-image:var(--waaagh-face)!important;background-size:contain!important;background-position:center!important;animation:none!important}',
@@ -302,7 +304,7 @@ const CSS = [
   '@keyframes waaagh-blink{0%,86%{background-position:0 0}90%{background-position:0 50%}94%,97%{background-position:0 100%}100%{background-position:0 0}}',
   /*
    * Working: the shout bubble is up for the whole turn, cycling through the same Ork words
-   * as the placeholder (one 700ms tick drives both). It hangs ABOVE the mascot, growing
+   * as the placeholder (one tick drives both), at 2.4s per phrase. It hangs ABOVE the mascot, growing
    * rightwards, rather than beside his head: to his left there is only the page margin,
    * which on a narrow window is narrower than the bubble, so the column's `overflow:hidden`
    * (or the sidebar) clipped its left half — the owner saw "gh!!" and nothing else. The two
@@ -531,7 +533,10 @@ function fitMascot(orc: HTMLElement | null): void {
    * top; the bubble has to clear that edge or it covers the bubble's corner.
    */
   const orcBox = orc.getBoundingClientRect()
-  const bellowLeft = Math.max(0, Math.round(columnBox.left - orcBox.left))
+  const wallClamp = Math.max(0, Math.round(columnBox.left - orcBox.left))
+  // Plus a nudge: flush against the wall the bubble hugged the sidebar, and the owner
+  // asked for it further right. The clamp still wins on a window too narrow to allow it.
+  const bellowLeft = Math.max(wallClamp, BELLOW_SHIFT)
   const bellowLift = Math.max(6, Math.round(orcBox.top - cardBox.top + 4))
   orc.style.setProperty('--waaagh-bellow-left', `${bellowLeft}px`)
   orc.style.setProperty('--waaagh-bellow-lift', `${bellowLift}px`)
@@ -635,6 +640,12 @@ function scheduleMarkRunningLabel(): void {
 }
 
 // ── WaaaghOrc (conversation.input.left): the decorative Ork head ─────────────
+/**
+ * How long one thing holds: one Ork word in the placeholder and in the shout bubble, and
+ * one full pass of the eight work frames. They were separate (700ms words, a 1.2s loop) and
+ * both were too quick to read — the two now share a cadence, one phrase per animation loop.
+ */
+const WORD_MS = 2400
 const ORK_WORDS = ['Waaagh!', '俺寻思这能成……', 'More dakka!', "Gork n' Mork!", '俺寻思……', 'Waaaaaaagh!!!']
 /**
  * Fixed Ork phrases for masked messages. The pure bellow is deliberately NOT in
@@ -715,7 +726,7 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
   const [wordIndex, setWordIndex] = React.useState(0)
   React.useEffect(() => {
     if (!running) return
-    const id = setInterval(() => setWordIndex((index) => (index + 1) % ORK_WORDS.length), 700)
+    const id = setInterval(() => setWordIndex((index) => (index + 1) % ORK_WORDS.length), WORD_MS)
     return () => clearInterval(id)
   }, [running])
 
@@ -790,7 +801,7 @@ function WaaaghOrc(rawProps: OrkProps): React.ReactElement | null {
 
   // While running: flag the document, swap the composer placeholder for a cycling Ork
   // word, hang the same word in the shout bubble over his head, and turn the running label
-  // into "Waaaaaaagh!!!". All three ride the one 700ms tick — no extra timers, and the
+  // into "Waaaaaaagh!!!". All three ride the one WORD_MS tick — no extra timers, and the
   // bubble and the placeholder always say the same thing.
   React.useEffect(() => {
     if (typeof document === 'undefined') return

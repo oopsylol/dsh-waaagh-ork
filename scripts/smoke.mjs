@@ -127,6 +127,8 @@ try {
   const work = await probe()
   check(work.strip === 'waaagh-work-frames', 'working shows the keyboard strip', work.strip)
   check(work.size === '100% 800%', 'working strip is 8 frames', work.size)
+  // The cadence is a knob the owner has asked about twice; pin it. One phrase per loop.
+  check(work.walk === '2.4s', 'the work animation is not too quick', work.walk)
   // He may borrow up to 10px of the card's own left padding — that is how he stays big on a
   // narrow window — and no more, because the "+" button sits further in than that.
   check(work.clearsCard >= -12, 'the mascot overlaps the card by at most its padding', `${work.clearsCard}px · ${work.detail}`)
@@ -140,7 +142,7 @@ try {
     'the shout bubble is up while working',
     String(firstBubble)
   )
-  await page.waitForTimeout(900)
+  await page.waitForTimeout(2700)
   const secondBubble = await bubbleText()
   check(secondBubble !== firstBubble && secondBubble !== 'none', 'the bubble cycles while working', `${firstBubble} → ${secondBubble}`)
 
@@ -179,6 +181,8 @@ try {
       const lift = parseFloat(getComputedStyle(orc).getPropertyValue('--waaagh-bellow-lift')) || 0
       return {
         startsAt: Math.round(o.left + left),
+        shift: Math.round(left),
+        mascotLeft: Math.round(o.left),
         columnLeft: column === null ? null : Math.round(column.left),
         bellowBottom: Math.round(o.top - lift),
         cardTop: Math.round(c.top),
@@ -240,6 +244,13 @@ try {
       bellow.bellowBottom <= bellow.cardTop,
       `the bellow clears the card at ${width}px`,
       `bottom ${bellow.bellowBottom} vs card top ${bellow.cardTop}`
+    )
+    // The owner asked for it further right: it starts a nudge in from the mascot's left
+    // edge now, and the wall clamp only wins where there is no room for the nudge.
+    check(
+      bellow.startsAt - bellow.mascotLeft >= 20,
+      `the bellow is nudged right of the mascot's edge at ${width}px`,
+      `${bellow.startsAt - bellow.mascotLeft}px in (shift ${bellow.shift})`
     )
   }
   await page.setViewportSize({ width: 1440, height: 900 })
